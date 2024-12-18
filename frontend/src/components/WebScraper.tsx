@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Box,
@@ -15,7 +15,10 @@ import {
   useTheme,
   useMediaQuery,
   styled,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
+import { mockAnalysis } from '../mocks/analysisData';
 
 // Styled components
 const StyledContainer = styled(Container)(({ theme }) => ({
@@ -44,8 +47,39 @@ const CodeBlock = styled('pre')(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   overflow: 'auto',
   margin: 0,
+  maxHeight: '500px',
   '& code': {
     fontFamily: 'monospace',
+    fontSize: '0.875rem',
+    lineHeight: 1.5,
+  }
+}));
+
+const TreeView = styled(Box)(({ theme }) => ({
+  '& .tree-item': {
+    marginLeft: theme.spacing(3),
+    position: 'relative',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: '-16px',
+      top: '50%',
+      width: '12px',
+      height: '1px',
+      backgroundColor: theme.palette.divider,
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      left: '-16px',
+      top: '-8px',
+      width: '1px',
+      height: 'calc(100% + 16px)',
+      backgroundColor: theme.palette.divider,
+    },
+    '&:last-child::after': {
+      height: '50%',
+    }
   }
 }));
 
@@ -70,6 +104,48 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+const StructureNode = ({ node, depth = 0 }: { node: any; depth?: number }) => {
+  const theme = useTheme();
+  const bgColor = depth % 2 === 0 ? 'background.default' : 'background.paper';
+
+  return (
+    <Box sx={{ pl: 2 }}>
+      <Paper 
+        sx={{ 
+          p: 1, 
+          mb: 1, 
+          bgcolor: bgColor,
+          border: 1,
+          borderColor: 'divider'
+        }}
+      >
+        <Typography component="div" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Typography component="span" color="primary.main" fontWeight="bold">
+            {node.type}
+          </Typography>
+          {node.className && (
+            <Typography component="span" color="text.secondary">
+              class="{node.className}"
+            </Typography>
+          )}
+          {node.text && (
+            <Typography component="span" color="success.main">
+              "{node.text}"
+            </Typography>
+          )}
+        </Typography>
+      </Paper>
+      {node.children && (
+        <Box className="tree-item">
+          {node.children.map((child: any, index: number) => (
+            <StructureNode key={index} node={child} depth={depth + 1} />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 function WebScraper() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,25 +153,64 @@ function WebScraper() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [useMockData, setUseMockData] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const validateUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setUrl(newUrl);
+    
+    // Clear error when user starts typing
+    if (urlError && newUrl) {
+      setUrlError(null);
+    }
+  };
+
   const handleAnalyze = async () => {
-    if (!url) {
-      setError('Please enter a URL');
-      setSnackbarOpen(true);
+    // Reset errors
+    setError(null);
+    setUrlError(null);
+
+    // Validate empty URL
+    if (!url.trim()) {
+      setUrlError('Please enter a URL');
+      return;
+    }
+
+    // Validate URL format
+    if (!validateUrl(url)) {
+      setUrlError('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
 
     setLoading(true);
-    setError(null);
+
+    if (useMockData) {
+      setTimeout(() => {
+        setAnalysis(mockAnalysis);
+        setLoading(false);
+      }, 1000);
+      return;
+    }
 
     try {
       const response = await axios.post('http://localhost:3000/analyze', { url });
       setAnalysis(response.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
       setSnackbarOpen(true);
     } finally {
       setLoading(false);
@@ -131,14 +246,40 @@ function WebScraper() {
         }}
       >
         <ContentPaper elevation={2}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={useMockData}
+                  onChange={(e) => setUseMockData(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2" color="text.secondary">
+                  Use Test Data
+                </Typography>
+              }
+            />
+          </Box>
           <TextField
             fullWidth
             label="Enter URL"
             variant="outlined"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={handleUrlChange}
             disabled={loading}
+            error={!!urlError}
+            helperText={urlError}
             placeholder="https://example.com"
+            InputProps={{
+              type: 'url',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !loading) {
+                handleAnalyze();
+              }
+            }}
           />
           <Button
             fullWidth
@@ -176,28 +317,39 @@ function WebScraper() {
 
           <TabPanel value={currentTab} index={0}>
             <Typography variant="h6" gutterBottom>
-              Structure Analysis
+              HTML Structure Analysis
             </Typography>
-            <CodeBlock>
-              <code>{JSON.stringify(analysis.structure, null, 2)}</code>
-            </CodeBlock>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Below is a visual representation of your HTML structure, showing the hierarchy and relationships between elements.
+            </Typography>
+            <TreeView>
+              {analysis && Object.entries(analysis.structure).map(([key, value]: [string, any]) => (
+                <StructureNode key={key} node={{ type: key, ...value }} />
+              ))}
+            </TreeView>
           </TabPanel>
 
           <TabPanel value={currentTab} index={1}>
             <Typography variant="h6" gutterBottom>
               Generated React Components
             </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Here are your React components, automatically generated from the HTML structure. Each component is modular and reusable.
+            </Typography>
             <CodeBlock>
-              <code>{analysis.components}</code>
+              <code>{analysis?.components}</code>
             </CodeBlock>
           </TabPanel>
 
           <TabPanel value={currentTab} index={2}>
             <Typography variant="h6" gutterBottom>
-              Raw HTML
+              Original HTML
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              This is the original HTML code that was analyzed to generate the structure and components.
             </Typography>
             <CodeBlock>
-              <code>{analysis.html}</code>
+              <code>{analysis?.html}</code>
             </CodeBlock>
           </TabPanel>
         </ContentPaper>
