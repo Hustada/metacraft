@@ -5,80 +5,41 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const systemPrompt = `You are an expert React developer. Your task is to convert HTML content into modern React components.
-For each major section in the HTML (header, navigation, main content areas, etc.), create a complete, working React component.
+const systemPrompt = `You are an expert React developer who specializes in converting HTML into modern, reusable React components.
+Your task is to analyze HTML content and provide:
+1. A structured analysis of the HTML layout
+2. React components for major sections
+3. Theme recommendations
 
-Each component in your response must include the actual implementation code, not just descriptions.
-Example of the expected component format:
+Format your response as a JSON object with this exact structure:
 
 {
-  "componentName": "Header",
-  "purpose": "Main site header with navigation",
-  "preview": {
-    "jsx": \`import React from 'react';
-import { Box, Heading, Text, Link } from '@chakra-ui/react';
-
-interface HeaderProps {
-  title: string;
-  subtitle?: string;
-}
-
-const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
-  return (
-    <Box as="header" className="header container-fluid">
-      <Box className="page_inner">
-        <Box className="row">
-          <Box className="col-sm-8">
-            <Link href="/">
-              <Heading as="h1">{title}</Heading>
-              {subtitle && <Text as="small">{subtitle}</Text>}
-            </Link>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
-export default Header;\`,
-    "css": \`.header {
-  background: #fff;
-  border-bottom: 1px solid #eee;
-  padding: 1rem 0;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.header small {
-  display: block;
-  font-size: 1rem;
-  color: #666;
-}\`,
-    "props": \`// Example usage:
-<Header 
-  title="Books to Scrape"
-  subtitle="We love being scraped!"
-/>\`
-  }
-}
-
-Format your response as a structured JSON object with the following schema:
-{
-  "components": [{
-    "componentName": string,
-    "purpose": string,
-    "preview": {
-      "jsx": string (complete React component code),
-      "css": string (component styles),
-      "props": string (example usage)
+  "structure": {
+    "header": {
+      "type": "header",
+      "children": [
+        {
+          "type": string,
+          "className": string,
+          "text": string,
+          "children": array
+        }
+      ]
     },
-    "props": Record<string, string>,
-    "styling": Record<string, string>,
-    "accessibility": Record<string, string>
-  }],
+    "main": {
+      "type": "main",
+      "children": [
+        {
+          "type": string,
+          "className": string,
+          "text": string,
+          "children": array
+        }
+      ]
+    }
+  },
+  "components": string (complete React component code),
+  "html": string (formatted HTML code),
   "themeSystem": {
     "colors": {
       "primary": Record<string, string>,
@@ -92,23 +53,44 @@ Format your response as a structured JSON object with the following schema:
     },
     "spacing": Record<string, string>,
     "breakpoints": Record<string, string>
-  },
-  "implementation": {
-    "setup": string,
-    "dependencies": string[],
-    "structure": string
   }
 }
 
-IMPORTANT: For each component:
-1. Include ALL necessary imports
-2. Use TypeScript interfaces for props
-3. Include complete, working JSX code
-4. Include actual CSS/styling code
-5. Show example usage with props
-6. Make components responsive
-7. Include proper accessibility attributes
-`;
+Requirements for the components field:
+1. Create separate components for major sections (Header, Main, etc.)
+2. Use Material-UI components
+3. Include TypeScript interfaces for props
+4. Include all necessary imports
+5. Make components responsive
+6. Add proper accessibility attributes
+7. Include example usage with props
+
+Example component format:
+const Header = () => {
+  return (
+    <header>
+      <nav className="navbar">
+        <div className="logo">Example Site</div>
+        <ul className="nav-links">
+          <li>Home</li>
+          <li>About</li>
+          <li>Contact</li>
+        </ul>
+      </nav>
+    </header>
+  );
+};
+
+const Main = () => {
+  return (
+    <main>
+      <section className="hero">
+        <h1>Welcome to our site</h1>
+        <p>This is a beautiful hero section with engaging content.</p>
+      </section>
+    </main>
+  );
+};`;
 
 async function analyzeContent(htmlContent) {
     try {
@@ -118,19 +100,8 @@ async function analyzeContent(htmlContent) {
                 { role: "system", content: systemPrompt },
                 { 
                     role: "user", 
-                    content: `Convert this HTML into React components:
-                    ${htmlContent}
-
-                    Requirements:
-                    1. Create separate components for each major section (header, navigation, content areas)
-                    2. Use Chakra UI components where appropriate
-                    3. Include TypeScript interfaces for all props
-                    4. Provide complete, working component code that can be copied directly into a new file
-                    5. Include all necessary imports
-                    6. Add responsive styles
-                    7. Include example usage with sample props
-                    
-                    The response MUST include the actual React component code in the preview.jsx field, not just descriptions.`
+                    content: `Analyze this HTML and convert it into React components following the exact format specified:
+                    ${htmlContent}`
                 }
             ],
             response_format: { type: "json_object" },

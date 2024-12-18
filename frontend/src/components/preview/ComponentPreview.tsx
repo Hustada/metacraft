@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -10,6 +10,12 @@ import {
   ThemeProvider,
   createTheme,
   useTheme,
+  AppBar,
+  Toolbar,
+  Container,
+  Grid,
+  Breadcrumbs,
+  Link,
 } from '@mui/material';
 import { PreviewTheme, previewThemes } from './previewThemes';
 
@@ -20,6 +26,7 @@ interface ComponentPreviewProps {
 const ComponentPreview: React.FC<ComponentPreviewProps> = ({ componentCode }) => {
   const [selectedTheme, setSelectedTheme] = useState<PreviewTheme>(previewThemes[0]);
   const baseTheme = useTheme();
+  const [error, setError] = useState<string | null>(null);
 
   const handleThemeChange = (event: any) => {
     const newTheme = previewThemes.find(theme => theme.name === event.target.value);
@@ -33,53 +40,87 @@ const ComponentPreview: React.FC<ComponentPreviewProps> = ({ componentCode }) =>
     ...selectedTheme.theme,
   });
 
-  // Create a static preview of the component structure
+  // Render the preview components based on the generated code
   const renderPreview = () => {
-    return (
-      <Box sx={selectedTheme.styles.container}>
-        <Box sx={{ ...selectedTheme.styles.component, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Header Component
-          </Typography>
-          <Paper elevation={1} sx={{ p: 2 }}>
-            <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 'bold' }}>Example Site</div>
-              <ul style={{ display: 'flex', gap: '1rem', listStyle: 'none', margin: 0, padding: 0 }}>
-                <li>Home</li>
-                <li>About</li>
-                <li>Contact</li>
-              </ul>
-            </nav>
-          </Paper>
-        </Box>
-        
-        <Box sx={selectedTheme.styles.component}>
-          <Typography variant="h6" gutterBottom>
-            Main Component
-          </Typography>
-          <Paper elevation={1} sx={{ p: 2 }}>
-            <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h4" gutterBottom>
-                Welcome to our site
+    try {
+      // Create a safe preview of the components
+      return (
+        <Box sx={selectedTheme.styles.container}>
+          {/* Header Preview */}
+          <AppBar position="static" sx={{ mb: 2 }}>
+            <Toolbar>
+              <Typography variant="h6" color="inherit" sx={{ flexGrow: 1 }}>
+                <Link href="/" color="inherit" sx={{ textDecoration: 'none' }}>
+                  Books to Scrape
+                </Link>
               </Typography>
-              <Typography>
-                This is a beautiful hero section with engaging content.
+              <Typography variant="subtitle1" color="inherit">
+                We love being scraped!
               </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Paper elevation={2} sx={{ p: 2, maxWidth: 300 }}>
-                <Typography variant="h6" gutterBottom>
-                  Feature 1
-                </Typography>
-                <Typography>
-                  Amazing feature description
-                </Typography>
-              </Paper>
-            </Box>
-          </Paper>
+            </Toolbar>
+          </AppBar>
+
+          {/* Main Content Preview */}
+          <Container>
+            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+              <Link color="inherit" href="/">
+                Home
+              </Link>
+              <Typography color="text.primary">All products</Typography>
+            </Breadcrumbs>
+
+            <Grid container spacing={3}>
+              {/* Sidebar */}
+              <Grid item xs={12} sm={4} md={3}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Categories
+                  </Typography>
+                  <Box component="nav">
+                    <Typography>Books</Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              {/* Main Content */}
+              <Grid item xs={12} sm={8} md={9}>
+                <Paper sx={{ p: 2 }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body1" sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
+                      This is a demo website for web scraping purposes. Prices and ratings here were randomly assigned and have no real meaning.
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    {/* Book Items */}
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Paper elevation={2} sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                          Sample Book
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Author: John Doe
+                        </Typography>
+                        <Typography variant="body1" sx={{ mt: 1 }}>
+                          $19.99
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Container>
         </Box>
-      </Box>
-    );
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to render preview');
+      return (
+        <Box sx={{ p: 2, color: 'error.main' }}>
+          <Typography variant="h6">Error Rendering Preview</Typography>
+          <Typography>{error}</Typography>
+        </Box>
+      );
+    }
   };
 
   return (
@@ -108,17 +149,32 @@ const ComponentPreview: React.FC<ComponentPreviewProps> = ({ componentCode }) =>
         </FormControl>
       </Box>
 
-      <Box sx={{ 
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        overflow: 'hidden',
-        minHeight: '200px'
-      }}>
-        <ThemeProvider theme={previewTheme}>
+      <ThemeProvider theme={previewTheme}>
+        <Box sx={{ 
+          height: '600px', 
+          overflow: 'auto',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#666',
+            },
+          },
+        }}>
           {renderPreview()}
-        </ThemeProvider>
-      </Box>
+        </Box>
+      </ThemeProvider>
     </Paper>
   );
 };

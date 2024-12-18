@@ -29,8 +29,11 @@ const StyledContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(3),
   gap: theme.spacing(3),
   margin: '0 auto',
+  maxWidth: '100%',
+  overflow: 'hidden',
   '& > *': {
-    maxWidth: '100%'
+    maxWidth: '100%',
+    overflow: 'hidden'
   }
 }));
 
@@ -208,7 +211,17 @@ function WebScraper() {
 
     try {
       const response = await axios.post('http://localhost:3000/analyze', { url });
-      setAnalysis(response.data);
+      if (response.data.success) {
+        setAnalysis({
+          structure: response.data.structure,
+          components: response.data.components,
+          html: response.data.html,
+          themeSystem: response.data.themeSystem,
+          basicAnalysis: response.data.basicAnalysis
+        });
+      } else {
+        throw new Error(response.data.error || 'Failed to analyze URL');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);
@@ -324,7 +337,7 @@ function WebScraper() {
               Below is a visual representation of your HTML structure, showing the hierarchy and relationships between elements.
             </Typography>
             <TreeView>
-              {analysis && Object.entries(analysis.structure).map(([key, value]: [string, any]) => (
+              {analysis?.structure && Object.entries(analysis.structure).map(([key, value]: [string, any]) => (
                 <StructureNode key={key} node={{ type: key, ...value }} />
               ))}
             </TreeView>
@@ -337,15 +350,36 @@ function WebScraper() {
             <Typography variant="body2" color="text.secondary" paragraph>
               Here are your React components, automatically generated from the HTML structure. Each component is modular and reusable.
             </Typography>
-            <Box sx={{ mb: 3 }}>
-              <ComponentPreview componentCode={analysis?.components || ''} />
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              gap: 3,
+              maxWidth: '100%',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{ 
+                flex: '0 0 auto',
+                maxWidth: '100%'
+              }}>
+                <ComponentPreview componentCode={analysis?.components || ''} />
+              </Box>
+              <Box sx={{ 
+                flex: '1 1 auto',
+                maxWidth: '100%'
+              }}>
+                <Typography variant="h6" gutterBottom>
+                  Component Code
+                </Typography>
+                <Box sx={{ 
+                  maxHeight: '400px',
+                  overflow: 'auto'
+                }}>
+                  <CodeBlock>
+                    <code>{analysis?.components}</code>
+                  </CodeBlock>
+                </Box>
+              </Box>
             </Box>
-            <Typography variant="h6" gutterBottom>
-              Component Code
-            </Typography>
-            <CodeBlock>
-              <code>{analysis?.components}</code>
-            </CodeBlock>
           </TabPanel>
 
           <TabPanel value={currentTab} index={2}>

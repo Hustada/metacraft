@@ -67,12 +67,15 @@ app.post('/analyze', async (req, res) => {
         
         // Combine both analyses
         const analysisResult = {
-            basicAnalysis,
-            aiAnalysis,
-            sampleHtml: $.html().substring(0, 500) + "..."
+            success: true,
+            structure: aiAnalysis.structure,
+            components: aiAnalysis.components,
+            html: aiAnalysis.html,
+            themeSystem: aiAnalysis.themeSystem,
+            basicAnalysis
         };
         
-        console.log('Sending complete analysis result');
+        console.log('Sending complete analysis result:', JSON.stringify(analysisResult, null, 2));
         res.json(analysisResult);
         
     } catch (error) {
