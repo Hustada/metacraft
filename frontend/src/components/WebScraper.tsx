@@ -19,6 +19,7 @@ import {
   Switch,
 } from '@mui/material';
 import { mockAnalysis } from '../mocks/analysisData';
+import ComponentPreview from './preview/ComponentPreview';
 
 // Styled components
 const StyledContainer = styled(Container)(({ theme }) => ({
@@ -335,6 +336,12 @@ function WebScraper() {
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
               Here are your React components, automatically generated from the HTML structure. Each component is modular and reusable.
+            </Typography>
+            <Box sx={{ mb: 3 }}>
+              <ComponentPreview componentCode={analysis?.components || ''} />
+            </Box>
+            <Typography variant="h6" gutterBottom>
+              Component Code
             </Typography>
             <CodeBlock>
               <code>{analysis?.components}</code>

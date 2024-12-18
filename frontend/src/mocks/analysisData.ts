@@ -59,10 +59,7 @@ export const mockAnalysis = {
       ]
     }
   },
-  components: `import React from 'react';
-
-// Header Component
-const Header = () => {
+  components: `const Header = () => {
   return (
     <header>
       <nav className="navbar">
@@ -77,39 +74,22 @@ const Header = () => {
   );
 };
 
-// Hero Section Component
-const HeroSection = () => {
-  return (
-    <section className="hero">
-      <h1>Welcome to our site</h1>
-      <p>This is a beautiful hero section with engaging content.</p>
-    </section>
-  );
-};
-
-// Feature Card Component
-const FeatureCard = () => {
-  return (
-    <div className="feature-card">
-      <h3>Feature 1</h3>
-      <p>Amazing feature description</p>
-    </div>
-  );
-};
-
-// Main Component
 const Main = () => {
   return (
     <main>
-      <HeroSection />
+      <section className="hero">
+        <h1>Welcome to our site</h1>
+        <p>This is a beautiful hero section with engaging content.</p>
+      </section>
       <section className="features">
-        <FeatureCard />
+        <div className="feature-card">
+          <h3>Feature 1</h3>
+          <p>Amazing feature description</p>
+        </div>
       </section>
     </main>
   );
-};
-
-export { Header, Main };`,
+};`,
   html: `<!DOCTYPE html>
 <html lang="en">
 <head>
