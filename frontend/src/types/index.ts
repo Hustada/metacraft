@@ -55,10 +55,59 @@ interface ImageInfo {
   height: string;
 }
 
-export interface AnalysisResponse {
-  analysis: string;
+export interface BasicAnalysis {
+  title: string;
+  linkCount: number;
+  imageCount: number;
+  headerCount: number;
+  paragraphCount: number;
+  divCount: number;
+}
+
+export interface ComponentProps {
+  interface: string;
+  description: Record<string, string>;
+}
+
+export interface ComponentStyling {
+  theme: Record<string, any>;
+  customization: string;
+}
+
+export interface Component {
+  name: string;
+  description: string;
+  code: string;
+  props: ComponentProps;
+  styling: ComponentStyling;
+  usage: string;
+  accessibility: string;
+  responsive: string;
+}
+
+export interface ThemeSystem {
+  colors: Record<string, string>;
+  spacing: Record<string, string | number>;
+  typography: Record<string, any>;
+  breakpoints: Record<string, string>;
+}
+
+export interface Implementation {
+  setup: string;
+  dependencies: string[];
   structure: string;
-  code_snippets: string;
+}
+
+export interface AIAnalysis {
+  components: Component[];
+  themeSystem: ThemeSystem;
+  implementation: Implementation;
+}
+
+export interface AnalysisResponse {
+  basicAnalysis: BasicAnalysis;
+  aiAnalysis: AIAnalysis;
+  sampleHtml: string;
 }
 
 export interface CodeSnippets {
