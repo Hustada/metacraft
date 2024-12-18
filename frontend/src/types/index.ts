@@ -75,14 +75,19 @@ export interface ComponentStyling {
 }
 
 export interface Component {
-  name: string;
-  description: string;
-  code: string;
-  props: ComponentProps;
-  styling: ComponentStyling;
-  usage: string;
-  accessibility: string;
-  responsive: string;
+  componentName: string;
+  purpose: string;
+  props: Record<string, string>;
+  htmlElements: Record<string, any>;
+  styling: Record<string, string>;
+  reusability: string;
+  stateManagement?: string;
+  accessibility: string | Record<string, string>;
+  preview?: {
+    jsx: string;
+    css?: string;
+    props?: string;
+  };
 }
 
 export interface ThemeSystem {
