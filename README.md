@@ -2,7 +2,7 @@
 
 A modern web application that extracts and analyzes content from any webpage using advanced AI models. Built with React, Node.js, and multiple AI providers including OpenAI and Anthropic.
 
-![Web Content Analyzer Screenshot](screenshot.png)
+![Web Content Analyzer Screenshot](docs/assets/screenshot.png)
 
 ## Features
 
