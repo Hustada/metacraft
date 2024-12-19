@@ -1,40 +1,40 @@
 const express = require('express');
 const router = express.Router();
-const { analyzeContent } = require('../services/aiAnalyzer');
+const { analyzeContent, MODELS } = require('../services/aiAnalyzer');
 const { scrapeUrl } = require('../services/scraper');
 
-router.post('/analyze', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
-        const { url } = req.body;
-        
+        const { url, modelId = 'gpt4' } = req.body;
+
         if (!url) {
             return res.status(400).json({ error: 'URL is required' });
         }
 
-        // First scrape the URL
-        const htmlContent = await scrapeUrl(url);
+        // Validate model selection
+        if (!MODELS[modelId]) {
+            return res.status(400).json({ error: 'Invalid model selection' });
+        }
+
+        console.log(`\n🌐 Analyzing URL: ${url}`);
+        console.log(`🤖 Using model: ${MODELS[modelId].name}`);
+
+        // Scrape the URL
+        const scrapedContent = await scrapeUrl(url);
         
-        // Then analyze the content
-        const analysis = await analyzeContent(htmlContent);
-        
-        // Parse the response to ensure it's valid JSON
-        const parsedAnalysis = typeof analysis === 'string' ? JSON.parse(analysis) : analysis;
-        
-        // Send the structured response
+        // Analyze with selected model
+        const analysis = await analyzeContent(scrapedContent, modelId);
+
         res.json({
             success: true,
-            data: {
-                structure: parsedAnalysis.structure,
-                components: parsedAnalysis.components,
-                html: parsedAnalysis.html,
-                themeSystem: parsedAnalysis.themeSystem
-            }
+            components: analysis,
+            model: MODELS[modelId].name
         });
     } catch (error) {
-        console.error('Error in analyze route:', error);
+        console.error('Analysis error:', error);
         res.status(500).json({
             success: false,
-            error: error.message || 'Failed to analyze content'
+            error: error.message || 'Failed to analyze URL'
         });
     }
 });

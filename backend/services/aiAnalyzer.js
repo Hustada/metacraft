@@ -1,121 +1,210 @@
-const OpenAI = require('openai');
+const { OpenAI } = require('openai');
+const Anthropic = require('@anthropic-ai/sdk');
+const cheerio = require('cheerio');
 require('dotenv').config();
 
+// Initialize AI clients
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const systemPrompt = `You are an expert React developer who specializes in converting HTML into modern, reusable React components.
-Your task is to analyze HTML content and provide:
-1. A structured analysis of the HTML layout
-2. React components for major sections
-3. Theme recommendations
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY
+});
 
-Format your response as a JSON object with this exact structure:
+const DATA_EXTRACTION_PROMPT = `You are an expert data extraction and analysis assistant. Extract structured data and insights from the HTML content, focusing on:
 
+1. Page Summary (Required):
+  • Overview: A clear, concise summary of what the page is about
+  • Key Insights: List 3-5 important takeaways or insights from the content. These should be specific, actionable, or noteworthy points that provide value to the reader
+  • Topics: Main themes or subjects covered
+  • Target Audience: Who this content is primarily intended for
+  • Content Type: Type of page (article, product page, blog post, etc.)
+
+2. Content Elements:
+  • Titles: Extract all headings (H1, H2, H3…) with their hierarchy
+  • Paragraphs: Main text content, excluding boilerplate
+  • Links: Important links with context
+  • Products: If present, extract product details (name, price, description, SKU)
+  • Metadata: Published date, author, categories, etc.
+
+3. Return a Structured JSON Object with:
 {
-  "structure": {
-    "header": {
-      "type": "header",
-      "children": [
-        {
-          "type": string,
-          "className": string,
-          "text": string,
-          "children": array
-        }
-      ]
-    },
-    "main": {
-      "type": "main",
-      "children": [
-        {
-          "type": string,
-          "className": string,
-          "text": string,
-          "children": array
-        }
-      ]
-    }
+  "summary": {
+    "overview": "Clear description of the page content",
+    "insights": [
+      "Key insight 1 - specific and valuable",
+      "Key insight 2 - focus on important findings",
+      "Key insight 3 - actionable takeaway"
+    ],
+    "topics": ["Topic 1", "Topic 2"],
+    "audience": "Target audience description",
+    "contentType": "Type of content"
   },
-  "components": string (complete React component code),
-  "html": string (formatted HTML code),
-  "themeSystem": {
-    "colors": {
-      "primary": Record<string, string>,
-      "accent": Record<string, string>,
-      "background": Record<string, string>,
-      "text": Record<string, string>
-    },
-    "typography": {
-      "fonts": Record<string, string>,
-      "fontSizes": Record<string, string>
-    },
-    "spacing": Record<string, string>,
-    "breakpoints": Record<string, string>
+  "titles": [{"type": "h1", "text": "Title"}],
+  "paragraphs": ["Main content..."],
+  "links": [{"text": "Link text", "url": "URL"}],
+  "products": [{
+    "title": "Product name",
+    "price": 99.99,
+    "description": "Description",
+    "sku": "SKU123"
+  }],
+  "metadata": {
+    "author": "Author name",
+    "publishDate": "Date",
+    "categories": ["Category 1"]
   }
-}
+}`;
 
-Requirements for the components field:
-1. Create separate components for major sections (Header, Main, etc.)
-2. Use Material-UI components
-3. Include TypeScript interfaces for props
-4. Include all necessary imports
-5. Make components responsive
-6. Add proper accessibility attributes
-7. Include example usage with props
-
-Example component format:
-const Header = () => {
-  return (
-    <header>
-      <nav className="navbar">
-        <div className="logo">Example Site</div>
-        <ul className="nav-links">
-          <li>Home</li>
-          <li>About</li>
-          <li>Contact</li>
-        </ul>
-      </nav>
-    </header>
-  );
+const MODELS = {
+    'gpt4': {
+        id: 'gpt-4-turbo-preview',
+        name: 'GPT-4 Turbo',
+        provider: 'openai',
+        description: 'Latest GPT-4 model with improved analysis capabilities',
+        available: true,
+        maxTokens: 4000,
+        systemPrompt: DATA_EXTRACTION_PROMPT
+    },
+    'gpt35': {
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5 Turbo',
+        provider: 'openai',
+        description: 'Fast and efficient for basic content analysis',
+        available: true,
+        maxTokens: 4000,
+        systemPrompt: DATA_EXTRACTION_PROMPT
+    },
+    'claude': {
+        id: 'claude-3-sonnet-20240229',
+        name: 'Claude 3 Sonnet',
+        provider: 'anthropic',
+        description: 'Advanced model with strong analytical capabilities',
+        available: true,
+        maxTokens: 4000,
+        systemPrompt: DATA_EXTRACTION_PROMPT
+    }
 };
 
-const Main = () => {
-  return (
-    <main>
-      <section className="hero">
-        <h1>Welcome to our site</h1>
-        <p>This is a beautiful hero section with engaging content.</p>
-      </section>
-    </main>
-  );
-};`;
+async function analyzeWithOpenAI(html, modelConfig) {
+    const completion = await openai.chat.completions.create({
+        model: modelConfig.id,
+        messages: [
+            { role: "system", content: modelConfig.systemPrompt },
+            { role: "user", content: `Extract structured data from this HTML:\n${html}` }
+        ],
+        temperature: 0.2,
+        max_tokens: modelConfig.maxTokens,
+        response_format: { type: "json_object" }
+    });
 
-async function analyzeContent(htmlContent) {
+    return completion.choices[0].message.content;
+}
+
+async function analyzeWithClaude(content, modelConfig) {
     try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4-1106-preview",
+        const prompt = `${modelConfig.systemPrompt}\n\nHere is the content to analyze:\n${content}\n\nProvide the analysis in the exact JSON format specified above.`;
+        
+        const response = await anthropic.messages.create({
+            model: modelConfig.id,
+            max_tokens: modelConfig.maxTokens,
             messages: [
-                { role: "system", content: systemPrompt },
                 { 
                     role: "user", 
-                    content: `Analyze this HTML and convert it into React components following the exact format specified:
-                    ${htmlContent}`
+                    content: prompt 
                 }
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.1,
-            max_tokens: 4000,
+            ]
         });
 
-        return completion.choices[0].message.content;
+        // Extract the content from the response
+        const responseContent = response.content[0].text;
+        
+        // Find the JSON part of the response
+        const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error('No valid JSON found in response');
+        }
+
+        return JSON.parse(jsonMatch[0]);
     } catch (error) {
-        console.error('Error analyzing content:', error);
+        console.error('Error analyzing with Claude:', error);
+        throw error;
+    }
+}
+
+async function analyzeWithAnthropic(html, modelConfig) {
+    const message = await anthropic.messages.create({
+        model: modelConfig.id,
+        max_tokens: modelConfig.maxTokens,
+        messages: [
+            { role: "system", content: modelConfig.systemPrompt },
+            { role: "user", content: `Extract structured data from this HTML:\n${html}` }
+        ],
+        temperature: 0.2
+    });
+
+    return message.content[0].text;
+}
+
+async function analyzeContent(htmlContent, modelId = 'gpt4') {
+    try {
+        console.log(`\n🔍 Analyzing with ${MODELS[modelId].name}...`);
+        const $ = cheerio.load(htmlContent);
+        
+        // Extract main content and basic metadata
+        console.log('📦 Extracting content...');
+        const mainContent = $('main').html() || $('body').html();
+        const basicMetadata = {
+            title: $('title').text(),
+            description: $('meta[name="description"]').attr('content'),
+            keywords: $('meta[name="keywords"]').attr('content'),
+            ogTitle: $('meta[property="og:title"]').attr('content'),
+            ogDescription: $('meta[property="og:description"]').attr('content'),
+            ogImage: $('meta[property="og:image"]').attr('content')
+        };
+
+        // Choose the appropriate AI provider
+        const modelConfig = MODELS[modelId];
+        if (!modelConfig.available) {
+            throw new Error(`Model ${modelConfig.name} is not yet available`);
+        }
+
+        let result;
+        if (modelConfig.provider === 'openai') {
+            result = await analyzeWithOpenAI(mainContent, modelConfig);
+        } else if (modelConfig.provider === 'anthropic') {
+            if (modelConfig.name.includes('Claude')) {
+                result = await analyzeWithClaude(mainContent, modelConfig);
+            } else {
+                result = await analyzeWithAnthropic(mainContent, modelConfig);
+            }
+        } else {
+            throw new Error(`Provider ${modelConfig.provider} not implemented`);
+        }
+
+        // Parse the result and merge metadata
+        const parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+        parsedResult.metadata = { ...parsedResult.metadata, ...basicMetadata };
+
+        // Log extraction summary
+        console.log(`✅ Extraction complete
+📝 Content found:
+  • Summary: ${parsedResult.summary ? 'Yes' : 'No'}
+  • Titles: ${(parsedResult.titles || []).length}
+  • Paragraphs: ${(parsedResult.paragraphs || []).length}
+  • Links: ${(parsedResult.links || []).length}
+  • Products: ${(parsedResult.products || []).length}
+`);
+        
+        return parsedResult;
+    } catch (error) {
+        console.error('\n❌ Error in data extraction:', error);
         throw error;
     }
 }
 
 module.exports = {
-    analyzeContent
+    analyzeContent,
+    MODELS
 };

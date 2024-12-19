@@ -1,417 +1,588 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
-  Paper,
-  Typography,
   TextField,
   Button,
+  Typography,
   CircularProgress,
-  Tabs,
-  Tab,
   Alert,
+  Paper,
+  Grid,
+  LinearProgress,
   Snackbar,
+  IconButton,
+  Tooltip,
   useTheme,
-  useMediaQuery,
-  styled,
-  FormControlLabel,
-  Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
 } from '@mui/material';
-import { mockAnalysis } from '../mocks/analysisData';
-import ComponentPreview from './preview/ComponentPreview';
+import { DataPreview } from './preview/DataPreview';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
-// Styled components
-const StyledContainer = styled(Container)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  padding: theme.spacing(3),
-  gap: theme.spacing(3),
-  margin: '0 auto',
-  maxWidth: '100%',
-  overflow: 'hidden',
-  '& > *': {
-    maxWidth: '100%',
-    overflow: 'hidden'
-  }
-}));
-
-const ContentPaper = styled(Paper)(({ theme }) => ({
-  width: '100%',
-  padding: theme.spacing(3),
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(2),
-}));
-
-const CodeBlock = styled('pre')(({ theme }) => ({
-  backgroundColor: theme.palette.grey[100],
-  padding: theme.spacing(2),
-  borderRadius: theme.shape.borderRadius,
-  overflow: 'auto',
-  margin: 0,
-  maxHeight: '500px',
-  '& code': {
-    fontFamily: 'monospace',
-    fontSize: '0.875rem',
-    lineHeight: 1.5,
-  }
-}));
-
-const TreeView = styled(Box)(({ theme }) => ({
-  '& .tree-item': {
-    marginLeft: theme.spacing(3),
-    position: 'relative',
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      left: '-16px',
-      top: '50%',
-      width: '12px',
-      height: '1px',
-      backgroundColor: theme.palette.divider,
-    },
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      left: '-16px',
-      top: '-8px',
-      width: '1px',
-      height: 'calc(100% + 16px)',
-      backgroundColor: theme.palette.divider,
-    },
-    '&:last-child::after': {
-      height: '50%',
-    }
-  }
-}));
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
+interface Model {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  available: boolean;
 }
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`tabpanel-${index}`}
-      aria-labelledby={`tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
-const StructureNode = ({ node, depth = 0 }: { node: any; depth?: number }) => {
-  const theme = useTheme();
-  const bgColor = depth % 2 === 0 ? 'background.default' : 'background.paper';
-
-  return (
-    <Box sx={{ pl: 2 }}>
-      <Paper 
-        sx={{ 
-          p: 1, 
-          mb: 1, 
-          bgcolor: bgColor,
-          border: 1,
-          borderColor: 'divider'
-        }}
-      >
-        <Typography component="div" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Typography component="span" color="primary.main" fontWeight="bold">
-            {node.type}
-          </Typography>
-          {node.className && (
-            <Typography component="span" color="text.secondary">
-              class="{node.className}"
-            </Typography>
-          )}
-          {node.text && (
-            <Typography component="span" color="success.main">
-              "{node.text}"
-            </Typography>
-          )}
-        </Typography>
-      </Paper>
-      {node.children && (
-        <Box className="tree-item">
-          {node.children.map((child: any, index: number) => (
-            <StructureNode key={index} node={child} depth={depth + 1} />
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-function WebScraper() {
-  const [url, setUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [currentTab, setCurrentTab] = useState(0);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [useMockData, setUseMockData] = useState(false);
-  const [urlError, setUrlError] = useState<string | null>(null);
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const validateUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
+interface ExtractedData {
+  summary?: {
+    overview?: string;
+    topics?: string[];
+    audience?: string;
+    contentType?: string;
+    insights?: string[];
   };
+  titles?: Array<{ type: string; text: string }>;
+  paragraphs?: string[];
+  links?: Array<{ text: string; url: string }>;
+  products?: Array<{
+    sku?: string;
+    title: string;
+    price?: number;
+    description?: string;
+  }>;
+  metadata?: {
+    title?: string;
+    description?: string;
+    keywords?: string;
+    author?: string;
+    publishDate?: string;
+    categories?: string[];
+  };
+}
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newUrl = e.target.value;
-    setUrl(newUrl);
-    
-    // Clear error when user starts typing
-    if (urlError && newUrl) {
-      setUrlError(null);
+interface AnalysisResponse {
+  success: boolean;
+  data?: ExtractedData;
+  model?: string;
+  error?: string;
+}
+
+const LoadingMessages = [
+  "Training an army of microscopic web crawlers...",
+  "Convincing AI not to become self-aware...",
+  "Untangling the world wide web...",
+  "Feeding hamsters that power our servers...",
+  "Downloading more RAM...",
+  "Consulting the digital oracle...",
+  "Bribing pixels to arrange themselves properly...",
+  "Teaching robots to read faster...",
+  "Reticulating splines...",
+  "Calculating the meaning of life (again)...",
+  "Debugging quantum fluctuations...",
+  "Compressing the internet...",
+  "Negotiating with stubborn HTML tags...",
+  "Summoning the spirit of Tim Berners-Lee...",
+  "Politely asking data to organize itself...",
+  "Teaching AI to appreciate cat videos...",
+  "Counting all the zeros and ones...",
+  "Persuading cookies to share their secrets...",
+  "Applying machine learning to office coffee maker...",
+  "Converting caffeine into code...",
+  "Explaining to AI why humans need sleep...",
+  "Recruiting more cloud servers from the sky...",
+  "Asking ChatGPT to stop writing poetry...",
+  "Optimizing blockchain synergy paradigms...",
+  "Teaching neural networks interpretive dance...",
+  "Downloading the entire internet (2%)...",
+  "Arguing with recursive functions...",
+  "Waiting for quantum computer to be both ready and not ready...",
+  "Translating binary into interpretive dance...",
+  "Asking Stack Overflow to be nice...",
+  "Convincing bugs they're actually features...",
+  "Measuring processor temperature in jalapeños...",
+  "Refactoring spaghetti code into linguine code...",
+  "Updating update updater...",
+  "Dividing by zero (safely)...",
+];
+
+export const WebScraper: React.FC = () => {
+  const theme = useTheme();
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
+  const [selectedModel, setSelectedModel] = useState('gpt4');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState(LoadingMessages[0]);
+  const [models, setModels] = useState<Record<string, Model>>({
+    'gpt4': {
+      id: 'gpt4',
+      name: 'GPT-4 Turbo',
+      provider: 'openai',
+      description: 'Latest GPT-4 model with improved analysis capabilities',
+      available: true
+    },
+    'gpt35': {
+      id: 'gpt35',
+      name: 'GPT-3.5 Turbo',
+      provider: 'openai',
+      description: 'Fast and efficient for basic content analysis',
+      available: true
+    },
+    'claude': {
+      id: 'claude',
+      name: 'Claude 3 Opus',
+      provider: 'anthropic',
+      description: 'Advanced model with strong analytical capabilities',
+      available: true
+    }
+  });
+
+  useEffect(() => {
+    // Fetch available models from the backend
+    fetch('/api/models')
+      .then(res => res.json())
+      .then(data => setModels(data))
+      .catch(err => console.error('Failed to fetch models:', err));
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLoadingMessage(LoadingMessages[Math.floor(Math.random() * LoadingMessages.length)]);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setUrl(text);
+        setSnackbarMessage('URL pasted from clipboard');
+        setSnackbarOpen(true);
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard:', err);
     }
   };
 
   const handleAnalyze = async () => {
-    // Reset errors
-    setError(null);
-    setUrlError(null);
-
-    // Validate empty URL
-    if (!url.trim()) {
-      setUrlError('Please enter a URL');
-      return;
-    }
-
-    // Validate URL format
-    if (!validateUrl(url)) {
-      setUrlError('Please enter a valid URL (e.g., https://example.com)');
-      return;
-    }
-
-    setLoading(true);
-
-    if (useMockData) {
-      setTimeout(() => {
-        setAnalysis(mockAnalysis);
-        setLoading(false);
-      }, 1000);
-      return;
-    }
+    if (!url || !selectedModel) return;
 
     try {
-      const response = await axios.post('http://localhost:3000/analyze', { url });
-      if (response.data.success) {
-        setAnalysis({
-          structure: response.data.structure,
-          components: response.data.components,
-          html: response.data.html,
-          themeSystem: response.data.themeSystem,
-          basicAnalysis: response.data.basicAnalysis
-        });
-      } else {
-        throw new Error(response.data.error || 'Failed to analyze URL');
+      setIsLoading(true);
+      setError(null);
+      setExtractedData(null);
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url, modelId: selectedModel }),
+      });
+
+      const result: AnalysisResponse = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to analyze URL');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      setError(errorMessage);
+
+      setExtractedData(result.data || null);
+      setSnackbarMessage(`Analysis completed using ${result.model}`);
       setSnackbarOpen(true);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to analyze URL');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
+  const handleModelChange = (event: any) => {
+    setSelectedModel(event.target.value);
   };
 
   return (
-    <StyledContainer maxWidth="lg">
-      {/* Header */}
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        align="center"
-        sx={{ 
-          width: '100%',
-          mb: 2,
-          mt: { xs: 2, sm: 4 }
-        }}
-      >
-        Web Scraper & React Component Generator
-      </Typography>
-
-      {/* URL Input Section */}
-      <Box 
-        sx={{ 
-          width: '100%',
-          maxWidth: 600,
-          mx: 'auto'
-        }}
-      >
-        <ContentPaper elevation={2}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  checked={useMockData}
-                  onChange={(e) => setUseMockData(e.target.checked)}
-                />
-              }
-              label={
-                <Typography variant="body2" color="text.secondary">
-                  Use Test Data
-                </Typography>
-              }
-            />
-          </Box>
-          <TextField
-            fullWidth
-            label="Enter URL"
-            variant="outlined"
-            value={url}
-            onChange={handleUrlChange}
-            disabled={loading}
-            error={!!urlError}
-            helperText={urlError}
-            placeholder="https://example.com"
-            InputProps={{
-              type: 'url',
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !loading) {
-                handleAnalyze();
-              }
-            }}
-          />
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleAnalyze}
-            disabled={loading}
+    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Paper 
             sx={{ 
-              py: 1.5,
-              mt: 1
-            }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Analyze URL'}
-          </Button>
-        </ContentPaper>
-      </Box>
-
-      {/* Analysis Results */}
-      {analysis && (
-        <ContentPaper elevation={2}>
-          <Tabs
-            value={currentTab}
-            onChange={handleTabChange}
-            variant={isMobile ? "scrollable" : "fullWidth"}
-            scrollButtons={isMobile ? "auto" : false}
-            sx={{ 
-              borderBottom: 1, 
-              borderColor: 'divider',
-              mb: 2
-            }}
-          >
-            <Tab label="HTML Analysis" />
-            <Tab label="React Components" />
-            <Tab label="Raw HTML" />
-          </Tabs>
-
-          <TabPanel value={currentTab} index={0}>
-            <Typography variant="h6" gutterBottom>
-              HTML Structure Analysis
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Below is a visual representation of your HTML structure, showing the hierarchy and relationships between elements.
-            </Typography>
-            <TreeView>
-              {analysis?.structure && Object.entries(analysis.structure).map(([key, value]: [string, any]) => (
-                <StructureNode key={key} node={{ type: key, ...value }} />
-              ))}
-            </TreeView>
-          </TabPanel>
-
-          <TabPanel value={currentTab} index={1}>
-            <Typography variant="h6" gutterBottom>
-              Generated React Components
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Here are your React components, automatically generated from the HTML structure. Each component is modular and reusable.
-            </Typography>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              gap: 3,
-              maxWidth: '100%',
+              p: 3,
+              position: 'relative',
               overflow: 'hidden'
-            }}>
-              <Box sx={{ 
-                flex: '0 0 auto',
-                maxWidth: '100%'
-              }}>
-                <ComponentPreview componentCode={analysis?.components || ''} />
-              </Box>
-              <Box sx={{ 
-                flex: '1 1 auto',
-                maxWidth: '100%'
-              }}>
-                <Typography variant="h6" gutterBottom>
-                  Component Code
-                </Typography>
-                <Box sx={{ 
-                  maxHeight: '400px',
-                  overflow: 'auto'
-                }}>
-                  <CodeBlock>
-                    <code>{analysis?.components}</code>
-                  </CodeBlock>
-                </Box>
+            }}
+          >
+            <Box sx={{ mb: 3 }}>
+              <Typography 
+                variant="h4" 
+                gutterBottom 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  letterSpacing: '-0.5px'
+                }}
+              >
+                Web Content Extractor
+                <Tooltip title="Enter a URL to analyze its content. We'll extract structured data like titles, paragraphs, links, and more.">
+                  <IconButton size="small">
+                    <HelpOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Typography>
+              <Typography 
+                color="text.secondary" 
+                variant="subtitle1" 
+                gutterBottom
+                sx={{ 
+                  letterSpacing: '0.1px',
+                  fontWeight: 400
+                }}
+              >
+                Analyze any webpage and extract structured data using AI
+              </Typography>
+
+              {/* Model Selection */}
+              <Box sx={{ mt: 3, mb: 4 }}>
+                <Stack spacing={2}>
+                  <FormControl fullWidth>
+                    <InputLabel id="model-select-label">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AutoFixHighIcon sx={{ color: 'primary.main' }} fontSize="small" />
+                        Select AI Model
+                      </Box>
+                    </InputLabel>
+                    <Select
+                      labelId="model-select-label"
+                      value={selectedModel}
+                      onChange={handleModelChange}
+                      disabled={isLoading}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AutoFixHighIcon fontSize="small" />
+                          Select AI Model
+                        </Box>
+                      }
+                    >
+                      {Object.entries(models).map(([id, model]) => (
+                        <MenuItem 
+                          key={id} 
+                          value={id}
+                          disabled={!model.available}
+                          sx={{ 
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: 0.5,
+                            py: 1
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                            <Typography variant="body1">
+                              {model.name}
+                            </Typography>
+                            {!model.available && (
+                              <Chip 
+                                label="Coming Soon" 
+                                size="small" 
+                                color="warning" 
+                                sx={{ ml: 'auto' }}
+                              />
+                            )}
+                          </Box>
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary"
+                          >
+                            {model.description}
+                          </Typography>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Enter URL"
+                      variant="outlined"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      disabled={isLoading}
+                      placeholder="https://example.com"
+                      type="url"
+                      InputProps={{
+                        endAdornment: (
+                          <Tooltip title="Paste URL from clipboard">
+                            <IconButton 
+                              onClick={handlePaste}
+                              disabled={isLoading}
+                              size="small"
+                              sx={{ mr: 1 }}
+                            >
+                              <ContentPasteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiInputLabel-root': {
+                          transform: 'translate(14px, 12px) scale(1)'
+                        },
+                        '& .MuiInputLabel-shrink': {
+                          transform: 'translate(14px, -9px) scale(0.75)'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: 'rgba(0, 0, 0, 0.23)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(0, 0, 0, 0.23)',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                        },
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={handleAnalyze}
+                      disabled={!url || isLoading || !selectedModel}
+                      sx={{ 
+                        minWidth: 120,
+                        height: 56,
+                        position: 'relative',
+                        bgcolor: 'primary.main',
+                        fontWeight: 500,
+                        letterSpacing: '0.5px',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        }
+                      }}
+                    >
+                      {isLoading ? (
+                        <CircularProgress size={24} color="inherit" />
+                      ) : (
+                        'Extract Data'
+                      )}
+                    </Button>
+                  </Box>
+                </Stack>
               </Box>
             </Box>
-          </TabPanel>
 
-          <TabPanel value={currentTab} index={2}>
-            <Typography variant="h6" gutterBottom>
-              Original HTML
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              This is the original HTML code that was analyzed to generate the structure and components.
-            </Typography>
-            <CodeBlock>
-              <code>{analysis?.html}</code>
-            </CodeBlock>
-          </TabPanel>
-        </ContentPaper>
-      )}
+            {isLoading && (
+              <LinearProgress 
+                sx={{ 
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0
+                }}
+              />
+            )}
+
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiAlert-message': {
+                    width: '100%'
+                  }
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                  Error analyzing URL
+                </Typography>
+                <Typography variant="body2" color="error">
+                  {error}
+                </Typography>
+              </Alert>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Page Summary */}
+        {extractedData?.summary && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3 }}>
+              <Typography 
+                variant="h5" 
+                gutterBottom
+                sx={{ 
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  letterSpacing: '-0.5px',
+                  mb: 3
+                }}
+              >
+                Page Summary
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography 
+                        variant="h6" 
+                        gutterBottom 
+                        sx={{ 
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          letterSpacing: '-0.5px'
+                        }}
+                      >
+                        Overview
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {extractedData.summary.overview}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography 
+                        variant="h6" 
+                        gutterBottom 
+                        sx={{ 
+                          color: 'primary.main',
+                          fontWeight: 600,
+                          letterSpacing: '-0.5px'
+                        }}
+                      >
+                        Key Insights
+                      </Typography>
+                      {extractedData.summary.insights?.map((insight, index) => (
+                        <Typography 
+                          key={index} 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'flex-start',
+                            gap: 1,
+                            mb: 1 
+                          }}
+                        >
+                          <span>•</span>
+                          <span>{insight}</span>
+                        </Typography>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {extractedData.summary.contentType && (
+                      <Chip 
+                        label={`Type: ${extractedData.summary.contentType}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ borderWidth: 2 }}
+                      />
+                    )}
+                    {extractedData.summary.audience && (
+                      <Chip 
+                        label={`Audience: ${extractedData.summary.audience}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ borderWidth: 2 }}
+                      />
+                    )}
+                    {extractedData.summary.topics?.map((topic, index) => (
+                      <Chip 
+                        key={index}
+                        label={topic}
+                        size="small"
+                        color="default"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* Extracted Data */}
+        <Grid item xs={12}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              minHeight: 400,
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <DataPreview
+              extractedData={extractedData}
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+            />
+            {isLoading && (
+              <Box 
+                sx={{ 
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  bgcolor: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(4px)',
+                  zIndex: 1
+                }}
+              >
+                <CircularProgress size={40} />
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 500,
+                    textAlign: 'center',
+                    maxWidth: '80%',
+                    animation: 'fadeInOut 2s infinite',
+                    '@keyframes fadeInOut': {
+                      '0%': { opacity: 0.5 },
+                      '50%': { opacity: 1 },
+                      '100%': { opacity: 0.5 },
+                    },
+                  }}
+                >
+                  {loadingMessage}
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={6000}
+        autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="error"
-          sx={{ width: '100%' }}
-        >
-          {error}
-        </Alert>
-      </Snackbar>
-    </StyledContainer>
+      />
+    </Box>
   );
-}
-
-export default WebScraper;
+};
