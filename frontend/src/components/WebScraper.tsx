@@ -347,7 +347,11 @@ export const WebScraper: React.FC = () => {
                     </Select>
                   </FormControl>
 
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2
+                  }}>
                     <TextField
                       fullWidth
                       label="Enter URL"
@@ -412,6 +416,7 @@ export const WebScraper: React.FC = () => {
                       disabled={!url || isLoading || !selectedModel}
                       sx={{ 
                         minWidth: 120,
+                        width: { xs: '100%', sm: 'auto' },
                         height: 56,
                         position: 'relative',
                         bgcolor: 'primary.main',
