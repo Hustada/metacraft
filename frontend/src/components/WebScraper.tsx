@@ -628,19 +628,25 @@ export const WebScraper: React.FC = () => {
         </Grid>
 
         {extractedData && (
-          <Box sx={{ mt: 4 }}>
+          <Box sx={{ mt: 4, textAlign: { xs: 'center', md: 'left' } }}>
             <Typography variant="h5" gutterBottom>Analysis Results</Typography>
             
             {/* Summary Section */}
             <Paper sx={{ p: 2, mb: 2 }}>
               <Typography variant="h6" gutterBottom>Summary</Typography>
-              <Typography variant="body1">{extractedData.summary.overview}</Typography>
+              <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                {extractedData.summary.overview}
+              </Typography>
               
               <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
-              <List>
+              <List sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: { xs: 'center', md: 'flex-start' }
+              }}>
                 {extractedData.summary.insights.map((insight, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
+                  <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
+                    <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
                       <LightbulbIcon color="primary" />
                     </ListItemIcon>
                     <ListItemText primary={insight} />
@@ -653,7 +659,7 @@ export const WebScraper: React.FC = () => {
             <Grid container spacing={2}>
               {/* Language Analysis */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
+                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>Language Analysis</Typography>
                   <Typography>Language: {extractedData.analysis.language.name}</Typography>
                   <Typography>Confidence: {extractedData.analysis.language.confidence}</Typography>
@@ -662,7 +668,7 @@ export const WebScraper: React.FC = () => {
 
               {/* Sentiment Analysis */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
+                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>Sentiment Analysis</Typography>
                   <Typography>Overall: {extractedData.analysis.sentiment.overall}</Typography>
                   <Typography>Score: {extractedData.analysis.sentiment.score}</Typography>
@@ -672,7 +678,7 @@ export const WebScraper: React.FC = () => {
 
               {/* Readability Analysis */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
+                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>Readability Analysis</Typography>
                   <Typography>Grade Level: {extractedData.analysis.readability.gradeLevel}</Typography>
                   <Typography>Score: {extractedData.analysis.readability.score}</Typography>
@@ -682,14 +688,14 @@ export const WebScraper: React.FC = () => {
 
               {/* SEO Analysis */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2 }}>
+                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>SEO Analysis</Typography>
                   <Typography>Score: {extractedData.analysis.seo.score}</Typography>
                   <Typography variant="subtitle1" sx={{ mt: 1 }}>Recommendations:</Typography>
-                  <List dense>
+                  <List dense sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                     {extractedData.analysis.seo.recommendations.map((rec, index) => (
-                      <ListItem key={index}>
-                        <ListItemIcon>
+                      <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                        <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
                           <CheckCircleIcon color="success" fontSize="small" />
                         </ListItemIcon>
                         <ListItemText primary={rec} />
@@ -702,13 +708,21 @@ export const WebScraper: React.FC = () => {
               {/* Keywords Analysis */}
               <Grid item xs={12}>
                 <Paper sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom>Keywords Analysis</Typography>
+                  <Typography variant="h6" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                    Keywords Analysis
+                  </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1">Primary Keywords:</Typography>
-                      <List dense>
+                      <Typography variant="subtitle1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                        Primary Keywords:
+                      </Typography>
+                      <List dense sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        alignItems: { xs: 'center', md: 'flex-start' }
+                      }}>
                         {extractedData.analysis.keywords.primary.map((keyword, index) => (
-                          <ListItem key={index}>
+                          <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
                             <ListItemText 
                               primary={keyword.keyword}
                               secondary={`Frequency: ${keyword.frequency} | Density: ${keyword.density}`}
@@ -718,10 +732,16 @@ export const WebScraper: React.FC = () => {
                       </List>
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1">Key Phrases:</Typography>
-                      <List dense>
+                      <Typography variant="subtitle1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                        Key Phrases:
+                      </Typography>
+                      <List dense sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        alignItems: { xs: 'center', md: 'flex-start' }
+                      }}>
                         {extractedData.analysis.keywords.phrases.map((phrase, index) => (
-                          <ListItem key={index}>
+                          <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
                             <ListItemText 
                               primary={phrase.phrase}
                               secondary={`Frequency: ${phrase.frequency}`}
