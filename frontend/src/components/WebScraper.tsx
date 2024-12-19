@@ -26,6 +26,7 @@ import { DataPreview } from './preview/DataPreview';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ClearIcon from '@mui/icons-material/Clear';
 
 interface Model {
   id: string;
@@ -169,6 +170,14 @@ export const WebScraper: React.FC = () => {
     } catch (err) {
       console.error('Failed to read clipboard:', err);
     }
+  };
+
+  const handleClear = () => {
+    setUrl('');
+    setError(null);
+    setExtractedData(null);
+    setSnackbarMessage('Page cleared');
+    setSnackbarOpen(true);
   };
 
   const handleAnalyze = async () => {
@@ -322,16 +331,31 @@ export const WebScraper: React.FC = () => {
                       type="url"
                       InputProps={{
                         endAdornment: (
-                          <Tooltip title="Paste URL from clipboard">
-                            <IconButton 
-                              onClick={handlePaste}
-                              disabled={isLoading}
-                              size="small"
-                              sx={{ mr: 1 }}
-                            >
-                              <ContentPasteIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Tooltip title="Clear page">
+                              <IconButton
+                                onClick={handleClear}
+                                disabled={isLoading}
+                                size="small"
+                                sx={{ 
+                                  opacity: (!url && !extractedData) ? 0.3 : 1,
+                                  transition: 'opacity 0.2s'
+                                }}
+                              >
+                                <ClearIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Paste URL from clipboard">
+                              <IconButton 
+                                onClick={handlePaste}
+                                disabled={isLoading}
+                                size="small"
+                                sx={{ mr: 1 }}
+                              >
+                                <ContentPasteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         ),
                       }}
                       sx={{

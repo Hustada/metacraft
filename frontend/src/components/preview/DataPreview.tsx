@@ -11,12 +11,19 @@ import {
   AccordionSummary,
   AccordionDetails,
   Table,
+  TableHead,
   TableBody,
   TableCell,
   TableContainer,
-  TableRow
+  TableRow,
+  Link,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LinkIcon from '@mui/icons-material/Link';
 
 interface ExtractedData {
   titles?: Array<{ type: string; text: string }>;
@@ -43,6 +50,40 @@ interface DataPreviewProps {
   selectedModel: string;
   onModelChange: (event: any) => void;
 }
+
+const isValidUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const LinkDisplay: React.FC<{ text: string; url: string }> = ({ text, url }) => {
+  const isValid = isValidUrl(url);
+  
+  return isValid ? (
+    <Link 
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      sx={{ 
+        color: 'primary.main',
+        textDecoration: 'none',
+        '&:hover': {
+          textDecoration: 'underline',
+        }
+      }}
+    >
+      {text || url}
+    </Link>
+  ) : (
+    <Typography component="span" color="text.secondary">
+      {text || url}
+    </Typography>
+  );
+};
 
 export const DataPreview: React.FC<DataPreviewProps> = ({ 
   extractedData,
@@ -135,6 +176,28 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
         {sections.map(({ key, label }) => {
           const data = extractedData[key as keyof ExtractedData];
           if (!data || (Array.isArray(data) && data.length === 0)) return null;
+
+          if (key === 'links') {
+            return (
+              <Box key={key} sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  {label}
+                </Typography>
+                <List>
+                  {data.map((link, index) => (
+                    <ListItem key={index}>
+                      <ListItemIcon>
+                        <LinkIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={<LinkDisplay text={link.text} url={link.url} />}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            );
+          }
 
           return (
             <Accordion key={key} defaultExpanded={key === 'metadata'}>
