@@ -78,7 +78,51 @@ const PRODUCT_GRID_REQUIREMENTS = `Requirements:
 8. Error handling for missing or empty products
 9. Make components available globally via window object`;
 
+const DATA_EXTRACTION_PROMPT = `You are an expert data extraction and analysis assistant. Extract structured data and insights from the HTML content, focusing on:
+
+1. Page Summary:
+  • Overview: A clear, concise summary of what the page is about
+  • Key Insights: List 3-5 important takeaways or insights from the content
+  • Topics: Main themes or subjects covered
+  • Target Audience: Who this content is primarily intended for
+  • Content Type: Type of page (article, product page, blog post, etc.)
+
+2. Content Elements:
+  • Titles: Extract all headings (H1, H2, H3…) with their hierarchy
+  • Paragraphs: Main text content, excluding boilerplate
+  • Links: Important links with context
+  • Products: If present, extract product details
+  • Metadata: Published date, author, categories, etc.
+
+Return a structured JSON object with:
+{
+  "summary": {
+    "overview": "string",
+    "insights": ["string"],
+    "topics": ["string"],
+    "audience": "string",
+    "contentType": "string"
+  },
+  "titles": [{"type": "h1|h2|h3", "text": "string"}],
+  "paragraphs": ["string"],
+  "links": [{"text": "string", "url": "string", "type": "internal|external"}],
+  "products": [{
+    "title": "string",
+    "price": "number|null",
+    "description": "string",
+    "sku": "string"
+  }],
+  "metadata": {
+    "author": "string",
+    "publishDate": "string",
+    "categories": ["string"],
+    "description": "string",
+    "keywords": ["string"]
+  }
+}`;
+
 module.exports = {
-    COMPONENT_GENERATOR_PROMPT,
-    PRODUCT_GRID_REQUIREMENTS
+  COMPONENT_GENERATOR_PROMPT,
+  PRODUCT_GRID_REQUIREMENTS,
+  DATA_EXTRACTION_PROMPT
 };

@@ -1,29 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  TextField,
   Button,
+  TextField,
   Typography,
-  CircularProgress,
-  Alert,
-  Paper,
   Grid,
-  LinearProgress,
-  Snackbar,
-  IconButton,
-  Tooltip,
-  useTheme,
+  Paper,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  LinearProgress,
   Card,
   CardContent,
   Chip,
   Stack,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { DataPreview } from './preview/DataPreview';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -36,31 +42,99 @@ interface Model {
   available: boolean;
 }
 
-interface ExtractedData {
-  summary?: {
-    overview?: string;
-    topics?: string[];
-    audience?: string;
-    contentType?: string;
-    insights?: string[];
+interface Analysis {
+  language: {
+    code: string;
+    name: string;
+    confidence: string;
   };
-  titles?: Array<{ type: string; text: string }>;
-  paragraphs?: string[];
-  links?: Array<{ text: string; url: string }>;
-  products?: Array<{
-    sku?: string;
-    title: string;
-    price?: number;
-    description?: string;
+  sentiment: {
+    overall: string;
+    score: number;
+    analysis: {
+      tone: string;
+      emotionalTriggers: string[];
+      highlights: {
+        positive: string[];
+        negative: string[];
+      };
+    };
+  };
+  readability: {
+    score: number;
+    gradeLevel: string;
+    metrics: {
+      averageSentenceLength: number;
+      complexWordPercentage: number;
+      readingEase: number;
+      totalWords: number;
+      totalSentences: number;
+    };
+    analysis: {
+      complexity: string;
+      sentenceStructure: string;
+      wordChoice: string;
+      suggestions: string[];
+    };
+  };
+  seo: {
+    score: number;
+    analysis: {
+      titleTag: string;
+      metaDescription: string;
+      headingStructure: string;
+      keywordUsage: string;
+    };
+    recommendations: string[];
+  };
+  keywords: {
+    primary: Array<{
+      keyword: string;
+      frequency: number;
+      density: string;
+      importance: string;
+    }>;
+    secondary: Array<{
+      keyword: string;
+      frequency: number;
+      density: string;
+    }>;
+    phrases: Array<{
+      phrase: string;
+      frequency: number;
+    }>;
+  };
+}
+
+interface ExtractedData {
+  summary: {
+    overview: string;
+    insights: string[];
+    topics: string[];
+    audience: string;
+    contentType: string;
+  };
+  titles: Array<{
+    type: string;
+    text: string;
   }>;
-  metadata?: {
-    title?: string;
-    description?: string;
-    keywords?: string;
+  paragraphs: string[];
+  links: Array<{
+    text: string;
+    url: string;
+    type: string;
+  }>;
+  metadata: {
     author?: string;
     publishDate?: string;
     categories?: string[];
+    description?: string;
+    keywords?: string[];
+    url: string;
+    analyzedAt: string;
+    model: string;
   };
+  analysis: Analysis;
 }
 
 interface AnalysisResponse {
@@ -71,50 +145,35 @@ interface AnalysisResponse {
 }
 
 const LoadingMessages = [
-  "Training an army of microscopic web crawlers...",
-  "Convincing AI not to become self-aware...",
-  "Untangling the world wide web...",
-  "Feeding hamsters that power our servers...",
-  "Downloading more RAM...",
-  "Consulting the digital oracle...",
-  "Bribing pixels to arrange themselves properly...",
-  "Teaching robots to read faster...",
-  "Reticulating splines...",
-  "Calculating the meaning of life (again)...",
-  "Debugging quantum fluctuations...",
-  "Compressing the internet...",
-  "Negotiating with stubborn HTML tags...",
-  "Summoning the spirit of Tim Berners-Lee...",
-  "Politely asking data to organize itself...",
-  "Teaching AI to appreciate cat videos...",
-  "Counting all the zeros and ones...",
-  "Persuading cookies to share their secrets...",
-  "Applying machine learning to office coffee maker...",
-  "Converting caffeine into code...",
-  "Explaining to AI why humans need sleep...",
-  "Recruiting more cloud servers from the sky...",
-  "Asking ChatGPT to stop writing poetry...",
-  "Optimizing blockchain synergy paradigms...",
-  "Teaching neural networks interpretive dance...",
-  "Downloading the entire internet (2%)...",
-  "Arguing with recursive functions...",
-  "Waiting for quantum computer to be both ready and not ready...",
-  "Translating binary into interpretive dance...",
-  "Asking Stack Overflow to be nice...",
-  "Convincing bugs they're actually features...",
-  "Measuring processor temperature in jalapeños...",
-  "Refactoring spaghetti code into linguine code...",
-  "Updating update updater...",
-  "Dividing by zero (safely)...",
+  "Initializing quantum neural pathways...",
+  "Recalibrating hyperspace DOM traversal matrices...",
+  "Engaging multi-threaded semantic analysis protocols...",
+  "Optimizing non-linear content extraction algorithms...",
+  "Synthesizing advanced heuristic parsing modules...",
+  "Deploying recursive metacontent interpretation subroutines...",
+  "Accelerating parallel sentiment quantification processes...",
+  "Harmonizing cross-dimensional data extraction vectors...",
+  "Bootstrapping advanced linguistic correlation engines...",
+  "Activating neural-symbolic reasoning frameworks...",
+  "Implementing quantum-entangled content analysis...",
+  "Synchronizing temporal parsing manifolds...",
+  "Calibrating semantic resonance frequencies...",
+  "Engaging hyperdimensional context mapping...",
+  "Initializing recursive metaphor detection arrays...",
+  "Deploying advanced irony quantification matrices...",
+  "Optimizing rhetorical pattern recognition algorithms...",
+  "Synthesizing cross-cultural linguistic tensors...",
+  "Reconfiguring semantic field harmonics...",
+  "Activating quantum sentiment superposition states..."
 ];
 
 export const WebScraper: React.FC = () => {
   const theme = useTheme();
   const [url, setUrl] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt4');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gpt4');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [loadingMessage, setLoadingMessage] = useState(LoadingMessages[0]);
@@ -181,33 +240,43 @@ export const WebScraper: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!url || !selectedModel) return;
+    if (!url || !selectedModel) {
+      setError('Please enter a URL and select a model');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setExtractedData(null);
+
+    console.log('Sending request with:', { url, modelId: selectedModel });
 
     try {
-      setIsLoading(true);
-      setError(null);
-      setExtractedData(null);
-
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, modelId: selectedModel }),
+        body: JSON.stringify({
+          url,
+          modelId: selectedModel,
+        }),
       });
 
-      const result: AnalysisResponse = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to analyze URL');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server response:', errorData);
+        throw new Error(errorData.error || 'Failed to analyze URL');
       }
 
-      setExtractedData(result.data || null);
-      setSnackbarMessage(`Analysis completed using ${result.model}`);
+      const result = await response.json();
+      console.log('Received result:', result);
+      setExtractedData(result);
+      setSnackbarMessage(`Analysis completed using ${result.metadata.model}`);
       setSnackbarOpen(true);
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to analyze URL');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to analyze URL');
     } finally {
       setIsLoading(false);
     }
@@ -263,59 +332,18 @@ export const WebScraper: React.FC = () => {
               {/* Model Selection */}
               <Box sx={{ mt: 3, mb: 4 }}>
                 <Stack spacing={2}>
-                  <FormControl fullWidth>
-                    <InputLabel id="model-select-label">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AutoFixHighIcon sx={{ color: 'primary.main' }} fontSize="small" />
-                        Select AI Model
-                      </Box>
-                    </InputLabel>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel id="model-select-label">AI Model</InputLabel>
                     <Select
                       labelId="model-select-label"
-                      value={selectedModel}
-                      onChange={handleModelChange}
-                      disabled={isLoading}
-                      label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AutoFixHighIcon fontSize="small" />
-                          Select AI Model
-                        </Box>
-                      }
+                      id="model-select"
+                      value={selectedModel || ''}
+                      label="AI Model"
+                      onChange={(e) => setSelectedModel(e.target.value)}
                     >
-                      {Object.entries(models).map(([id, model]) => (
-                        <MenuItem 
-                          key={id} 
-                          value={id}
-                          disabled={!model.available}
-                          sx={{ 
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: 0.5,
-                            py: 1
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                            <Typography variant="body1">
-                              {model.name}
-                            </Typography>
-                            {!model.available && (
-                              <Chip 
-                                label="Coming Soon" 
-                                size="small" 
-                                color="warning" 
-                                sx={{ ml: 'auto' }}
-                              />
-                            )}
-                          </Box>
-                          <Typography 
-                            variant="caption" 
-                            color="text.secondary"
-                          >
-                            {model.description}
-                          </Typography>
-                        </MenuItem>
-                      ))}
+                      <MenuItem value="gpt4">GPT-4 Turbo</MenuItem>
+                      <MenuItem value="gpt35">GPT-3.5 Turbo</MenuItem>
+                      <MenuItem value="claude">Claude 3</MenuItem>
                     </Select>
                   </FormControl>
 
@@ -598,6 +626,116 @@ export const WebScraper: React.FC = () => {
             )}
           </Paper>
         </Grid>
+
+        {extractedData && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>Analysis Results</Typography>
+            
+            {/* Summary Section */}
+            <Paper sx={{ p: 2, mb: 2 }}>
+              <Typography variant="h6" gutterBottom>Summary</Typography>
+              <Typography variant="body1">{extractedData.summary.overview}</Typography>
+              
+              <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
+              <List>
+                {extractedData.summary.insights.map((insight, index) => (
+                  <ListItem key={index}>
+                    <ListItemIcon>
+                      <LightbulbIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={insight} />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+
+            {/* Analysis Section */}
+            <Grid container spacing={2}>
+              {/* Language Analysis */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Language Analysis</Typography>
+                  <Typography>Language: {extractedData.analysis.language.name}</Typography>
+                  <Typography>Confidence: {extractedData.analysis.language.confidence}</Typography>
+                </Paper>
+              </Grid>
+
+              {/* Sentiment Analysis */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Sentiment Analysis</Typography>
+                  <Typography>Overall: {extractedData.analysis.sentiment.overall}</Typography>
+                  <Typography>Score: {extractedData.analysis.sentiment.score}</Typography>
+                  <Typography>Tone: {extractedData.analysis.sentiment.analysis.tone}</Typography>
+                </Paper>
+              </Grid>
+
+              {/* Readability Analysis */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Readability Analysis</Typography>
+                  <Typography>Grade Level: {extractedData.analysis.readability.gradeLevel}</Typography>
+                  <Typography>Score: {extractedData.analysis.readability.score}</Typography>
+                  <Typography>Complexity: {extractedData.analysis.readability.analysis.complexity}</Typography>
+                </Paper>
+              </Grid>
+
+              {/* SEO Analysis */}
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>SEO Analysis</Typography>
+                  <Typography>Score: {extractedData.analysis.seo.score}</Typography>
+                  <Typography variant="subtitle1" sx={{ mt: 1 }}>Recommendations:</Typography>
+                  <List dense>
+                    {extractedData.analysis.seo.recommendations.map((rec, index) => (
+                      <ListItem key={index}>
+                        <ListItemIcon>
+                          <CheckCircleIcon color="success" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={rec} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Paper>
+              </Grid>
+
+              {/* Keywords Analysis */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="h6" gutterBottom>Keywords Analysis</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1">Primary Keywords:</Typography>
+                      <List dense>
+                        {extractedData.analysis.keywords.primary.map((keyword, index) => (
+                          <ListItem key={index}>
+                            <ListItemText 
+                              primary={keyword.keyword}
+                              secondary={`Frequency: ${keyword.frequency} | Density: ${keyword.density}`}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="subtitle1">Key Phrases:</Typography>
+                      <List dense>
+                        {extractedData.analysis.keywords.phrases.map((phrase, index) => (
+                          <ListItem key={index}>
+                            <ListItemText 
+                              primary={phrase.phrase}
+                              secondary={`Frequency: ${phrase.frequency}`}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
       </Grid>
 
       <Snackbar
