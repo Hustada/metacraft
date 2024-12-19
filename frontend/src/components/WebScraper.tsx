@@ -310,8 +310,8 @@ export const WebScraper: React.FC = () => {
                   letterSpacing: '-0.5px'
                 }}
               >
-                Web Content Extractor
-                <Tooltip title="Enter a URL to analyze its content. We'll extract structured data like titles, paragraphs, links, and more.">
+                Content & Sentiment Analyzer
+                <Tooltip title="Enter a URL to analyze its content, sentiment, readability, and more using advanced AI models.">
                   <IconButton size="small">
                     <HelpOutlineIcon fontSize="small" />
                   </IconButton>
@@ -326,7 +326,7 @@ export const WebScraper: React.FC = () => {
                   fontWeight: 400
                 }}
               >
-                Analyze any webpage and extract structured data using AI
+                Deep analysis of web content using AI - extract data, understand sentiment, and assess readability
               </Typography>
 
               {/* Model Selection */}
@@ -588,8 +588,6 @@ export const WebScraper: React.FC = () => {
           >
             <DataPreview
               extractedData={extractedData}
-              selectedModel={selectedModel}
-              onModelChange={handleModelChange}
             />
             {isLoading && (
               <Box 
@@ -638,26 +636,37 @@ export const WebScraper: React.FC = () => {
             
             {/* Summary Section */}
             <Paper sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6" gutterBottom>Summary</Typography>
-              <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                {extractedData.summary.overview}
-              </Typography>
-              
-              <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
-              <List sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: { xs: 'center', md: 'flex-start' }
-              }}>
-                {extractedData.summary.insights.map((insight, index) => (
-                  <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                    <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
-                      <LightbulbIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText primary={insight} />
-                  </ListItem>
-                ))}
-              </List>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {extractedData.metadata.analyzedAt && (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip 
+                      label={`Analyzed: ${new Date(extractedData.metadata.analyzedAt).toLocaleString()}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
+                )}
+                <Typography variant="h6" gutterBottom>Summary</Typography>
+                <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                  {extractedData.summary.overview}
+                </Typography>
+                
+                <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
+                <List sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  alignItems: { xs: 'center', md: 'flex-start' }
+                }}>
+                  {extractedData.summary.insights.map((insight, index) => (
+                    <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
+                      <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
+                        <LightbulbIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText primary={insight} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
             </Paper>
 
             {/* Analysis Section */}

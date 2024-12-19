@@ -1,10 +1,6 @@
 import React from 'react';
 import { 
   Box, 
-  Select, 
-  MenuItem, 
-  FormControl, 
-  InputLabel,
   Typography,
   Paper,
   Accordion,
@@ -47,8 +43,6 @@ interface ExtractedData {
 
 interface DataPreviewProps {
   extractedData: ExtractedData | null;
-  selectedModel: string;
-  onModelChange: (event: any) => void;
 }
 
 const isValidUrl = (url: string) => {
@@ -86,9 +80,7 @@ const LinkDisplay: React.FC<{ text: string; url: string }> = ({ text, url }) => 
 };
 
 export const DataPreview: React.FC<DataPreviewProps> = ({ 
-  extractedData,
-  selectedModel,
-  onModelChange
+  extractedData
 }) => {
   if (!extractedData) {
     return (
@@ -158,20 +150,6 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ mb: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel>AI Model</InputLabel>
-          <Select
-            value={selectedModel}
-            label="AI Model"
-            onChange={(e) => onModelChange(e.target.value)}
-          >
-            <MenuItem value="gpt4">GPT-4 Turbo</MenuItem>
-            <MenuItem value="claude">Claude 3</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
       <Box sx={{ mt: 2 }}>
         {sections.map(({ key, label }) => {
           const data = extractedData[key as keyof ExtractedData];
@@ -179,23 +157,25 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
 
           if (key === 'links') {
             return (
-              <Box key={key} sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  {label}
-                </Typography>
-                <List>
-                  {data.map((link, index) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
-                        <LinkIcon color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={<LinkDisplay text={link.text} url={link.url} />}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
+              <Accordion key={key}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>{label}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List>
+                    {data.map((link, index) => (
+                      <ListItem key={index}>
+                        <ListItemIcon>
+                          <LinkIcon color="primary" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={<LinkDisplay text={link.text} url={link.url} />}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </AccordionDetails>
+              </Accordion>
             );
           }
 
