@@ -1,4 +1,4 @@
-import { Theme, PaletteOptions } from '@mui/material/styles';
+import { PaletteOptions } from '@mui/material/styles';
 
 export interface PreviewTheme {
   name: string;

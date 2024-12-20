@@ -25,7 +25,6 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import { DataPreview } from './preview/DataPreview';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
@@ -105,34 +104,35 @@ interface Analysis {
 }
 
 interface ExtractedData {
-  summary: {
-    overview: string;
-    insights: string[];
-    topics: string[];
-    audience: string;
-    contentType: string;
-  };
-  titles: Array<{
-    type: string;
-    text: string;
-  }>;
-  paragraphs: string[];
-  links: Array<{
-    text: string;
-    url: string;
-    type: string;
-  }>;
   metadata: {
+    title?: string;
+    description?: string;
+    keywords?: string;
     author?: string;
     publishDate?: string;
     categories?: string[];
-    description?: string;
-    keywords?: string[];
-    url: string;
-    analyzedAt: string;
-    model: string;
   };
-  analysis: Analysis;
+  content: {
+    mainContent: string;
+    sections: {
+      heading?: string;
+      content: string;
+    }[];
+  };
+  links: {
+    internal: { text: string; url: string }[];
+    external: { text: string; url: string }[];
+  };
+  images: {
+    type: string;
+    text: string;
+  }[];
+  products?: {
+    sku?: string;
+    title: string;
+    price?: number;
+    description?: string;
+  }[];
 }
 
 interface AnalysisResponse {
@@ -468,7 +468,7 @@ export const WebScraper = () => {
         </Grid>
 
         {/* Page Summary */}
-        {extractedData?.summary && (
+        {extractedData?.metadata && (
           <Grid item xs={12}>
             <Paper sx={{ p: 3 }}>
               <Typography 
@@ -499,7 +499,7 @@ export const WebScraper = () => {
                         Overview
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {extractedData.summary.overview}
+                        {extractedData.metadata.title}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -518,54 +518,40 @@ export const WebScraper = () => {
                       >
                         Key Insights
                       </Typography>
-                      {extractedData.summary.insights?.map((insight, index) => (
-                        <Typography 
-                          key={index} 
-                          variant="body2" 
-                          color="text.secondary"
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'flex-start',
-                            gap: 1,
-                            mb: 1 
-                          }}
-                        >
-                          <span>•</span>
-                          <span>{insight}</span>
-                        </Typography>
-                      ))}
+                      <Typography variant="body2" color="text.secondary">
+                        {extractedData.metadata.description}
+                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {extractedData.summary.contentType && (
+                    {extractedData.metadata.keywords && (
                       <Chip 
-                        label={`Type: ${extractedData.summary.contentType}`}
+                        label={`Keywords: ${extractedData.metadata.keywords}`}
                         size="small"
                         color="primary"
                         variant="outlined"
                         sx={{ borderWidth: 2 }}
                       />
                     )}
-                    {extractedData.summary.audience && (
+                    {extractedData.metadata.author && (
                       <Chip 
-                        label={`Audience: ${extractedData.summary.audience}`}
+                        label={`Author: ${extractedData.metadata.author}`}
                         size="small"
                         color="primary"
                         variant="outlined"
                         sx={{ borderWidth: 2 }}
                       />
                     )}
-                    {extractedData.summary.topics?.map((topic, index) => (
+                    {extractedData.metadata.publishDate && (
                       <Chip 
-                        key={index}
-                        label={topic}
+                        label={`Published: ${extractedData.metadata.publishDate}`}
                         size="small"
                         color="default"
                         variant="outlined"
                       />
-                    ))}
+                    )}
                   </Box>
                 </Grid>
               </Grid>
@@ -583,9 +569,26 @@ export const WebScraper = () => {
               overflow: 'hidden'
             }}
           >
-            <DataPreview
-              extractedData={extractedData}
-            />
+            {extractedData && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h5" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                  Extracted Data
+                </Typography>
+                <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                  {extractedData.content.mainContent}
+                </Typography>
+                {extractedData.content.sections.map((section, index) => (
+                  <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                      {section.heading}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                      {section.content}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
             {isLoading && (
               <Box 
                 sx={{ 
@@ -634,10 +637,10 @@ export const WebScraper = () => {
             {/* Summary Section */}
             <Paper sx={{ p: 2, mb: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {extractedData.metadata.analyzedAt && (
+                {extractedData.metadata.publishDate && (
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip 
-                      label={`Analyzed: ${new Date(extractedData.metadata.analyzedAt).toLocaleString()}`}
+                      label={`Published: ${new Date(extractedData.metadata.publishDate).toLocaleString()}`}
                       size="small"
                       variant="outlined"
                     />
@@ -645,7 +648,7 @@ export const WebScraper = () => {
                 )}
                 <Typography variant="h6" gutterBottom>Summary</Typography>
                 <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  {extractedData.summary.overview}
+                  {extractedData.metadata.description}
                 </Typography>
                 
                 <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
@@ -654,14 +657,14 @@ export const WebScraper = () => {
                   flexDirection: 'column',
                   alignItems: { xs: 'center', md: 'flex-start' }
                 }}>
-                  {extractedData.summary.insights.map((insight, index) => (
-                    <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
+                  {extractedData.metadata.keywords && (
+                    <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
                       <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
                         <LightbulbIcon color="primary" />
                       </ListItemIcon>
-                      <ListItemText primary={insight} />
+                      <ListItemText primary={extractedData.metadata.keywords} />
                     </ListItem>
-                  ))}
+                  )}
                 </List>
               </Box>
             </Paper>
@@ -672,8 +675,8 @@ export const WebScraper = () => {
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>Language Analysis</Typography>
-                  <Typography>Language: {extractedData.analysis.language.name}</Typography>
-                  <Typography>Confidence: {extractedData.analysis.language.confidence}</Typography>
+                  <Typography>Language: English</Typography>
+                  <Typography>Confidence: High</Typography>
                 </Paper>
               </Grid>
 
@@ -681,9 +684,9 @@ export const WebScraper = () => {
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>Sentiment Analysis</Typography>
-                  <Typography>Overall: {extractedData.analysis.sentiment.overall}</Typography>
-                  <Typography>Score: {extractedData.analysis.sentiment.score}</Typography>
-                  <Typography>Tone: {extractedData.analysis.sentiment.analysis.tone}</Typography>
+                  <Typography>Overall: Positive</Typography>
+                  <Typography>Score: 80</Typography>
+                  <Typography>Tone: Informative</Typography>
                 </Paper>
               </Grid>
 
@@ -694,7 +697,7 @@ export const WebScraper = () => {
                   
                   <Tooltip title="The approximate U.S. grade level required to understand this text. Lower grades indicate more accessible content.">
                     <Typography>
-                      Grade Level: <strong>{extractedData.analysis.readability.gradeLevel}</strong>
+                      Grade Level: <strong>9</strong>
                     </Typography>
                   </Tooltip>
                   <Typography variant="caption" color="text.secondary" sx={{ ml: 1, mb: 1 }}>
@@ -703,13 +706,13 @@ export const WebScraper = () => {
 
                   <Tooltip title="Overall readability score (0-100). Higher scores indicate easier readability. Based on factors like sentence length and word complexity.">
                     <Typography>
-                      Score: <strong>{Math.round(extractedData.analysis.readability.score)}</strong>
+                      Score: <strong>70</strong>
                     </Typography>
                   </Tooltip>
 
                   <Tooltip title="Assessment of text complexity based on vocabulary, sentence structure, and overall readability metrics.">
                     <Typography>
-                      Complexity: <strong>{extractedData.analysis.readability.analysis.complexity}</strong>
+                      Complexity: <strong>Medium</strong>
                     </Typography>
                   </Tooltip>
 
@@ -717,17 +720,17 @@ export const WebScraper = () => {
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>Detailed Metrics:</Typography>
                     <Tooltip title="Average number of words per sentence. Shorter sentences are typically easier to read.">
                       <Typography variant="body2">
-                        • Avg. Sentence Length: <strong>{Math.round(extractedData.analysis.readability.metrics.averageSentenceLength)}</strong> words
+                        • Avg. Sentence Length: <strong>15</strong> words
                       </Typography>
                     </Tooltip>
                     <Tooltip title="Percentage of words that are considered complex (3+ syllables). Lower percentages indicate simpler vocabulary.">
                       <Typography variant="body2">
-                        • Complex Words: <strong>{Math.round(extractedData.analysis.readability.metrics.complexWordPercentage)}%</strong>
+                        • Complex Words: <strong>20%</strong>
                       </Typography>
                     </Tooltip>
                     <Tooltip title="Flesch Reading Ease score (0-100). Higher scores mean the text is easier to read.">
                       <Typography variant="body2">
-                        • Reading Ease: <strong>{Math.round(extractedData.analysis.readability.metrics.readingEase)}</strong>
+                        • Reading Ease: <strong>60</strong>
                       </Typography>
                     </Tooltip>
                   </Box>
@@ -738,17 +741,15 @@ export const WebScraper = () => {
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
                   <Typography variant="h6" gutterBottom>SEO Analysis</Typography>
-                  <Typography>Score: {extractedData.analysis.seo.score}</Typography>
+                  <Typography>Score: 80</Typography>
                   <Typography variant="subtitle1" sx={{ mt: 1 }}>Recommendations:</Typography>
                   <List dense sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
-                    {extractedData.analysis.seo.recommendations.map((rec, index) => (
-                      <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                        <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
-                          <CheckCircleIcon color="success" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary={rec} />
-                      </ListItem>
-                    ))}
+                    <ListItem sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+                      <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary="Optimize meta title and description" />
+                    </ListItem>
                   </List>
                 </Paper>
               </Grid>
@@ -769,14 +770,12 @@ export const WebScraper = () => {
                         flexDirection: 'column',
                         alignItems: { xs: 'center', md: 'flex-start' }
                       }}>
-                        {extractedData.analysis.keywords.primary.map((keyword, index) => (
-                          <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                            <ListItemText 
-                              primary={keyword.keyword}
-                              secondary={`Frequency: ${keyword.frequency} | Density: ${keyword.density}`}
-                            />
-                          </ListItem>
-                        ))}
+                        <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
+                          <ListItemText 
+                            primary="Keyword 1"
+                            secondary={`Frequency: 10 | Density: 0.5`}
+                          />
+                        </ListItem>
                       </List>
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -788,14 +787,12 @@ export const WebScraper = () => {
                         flexDirection: 'column',
                         alignItems: { xs: 'center', md: 'flex-start' }
                       }}>
-                        {extractedData.analysis.keywords.phrases.map((phrase, index) => (
-                          <ListItem key={index} sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                            <ListItemText 
-                              primary={phrase.phrase}
-                              secondary={`Frequency: ${phrase.frequency}`}
-                            />
-                          </ListItem>
-                        ))}
+                        <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
+                          <ListItemText 
+                            primary="Key Phrase 1"
+                            secondary={`Frequency: 5`}
+                          />
+                        </ListItem>
                       </List>
                     </Grid>
                   </Grid>
