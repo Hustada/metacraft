@@ -692,11 +692,48 @@ export const WebScraper: React.FC = () => {
 
               {/* Readability Analysis */}
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
+                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' }, gap: 1 }}>
                   <Typography variant="h6" gutterBottom>Readability Analysis</Typography>
-                  <Typography>Grade Level: {extractedData.analysis.readability.gradeLevel}</Typography>
-                  <Typography>Score: {extractedData.analysis.readability.score}</Typography>
-                  <Typography>Complexity: {extractedData.analysis.readability.analysis.complexity}</Typography>
+                  
+                  <Tooltip title="The approximate U.S. grade level required to understand this text. Lower grades indicate more accessible content.">
+                    <Typography>
+                      Grade Level: <strong>{extractedData.analysis.readability.gradeLevel}</strong>
+                    </Typography>
+                  </Tooltip>
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1, mb: 1 }}>
+                    Grade levels: 1-6 (Elementary), 7-9 (Middle School), 10-12 (High School), 13+ (College)
+                  </Typography>
+
+                  <Tooltip title="Overall readability score (0-100). Higher scores indicate easier readability. Based on factors like sentence length and word complexity.">
+                    <Typography>
+                      Score: <strong>{Math.round(extractedData.analysis.readability.score)}</strong>
+                    </Typography>
+                  </Tooltip>
+
+                  <Tooltip title="Assessment of text complexity based on vocabulary, sentence structure, and overall readability metrics.">
+                    <Typography>
+                      Complexity: <strong>{extractedData.analysis.readability.analysis.complexity}</strong>
+                    </Typography>
+                  </Tooltip>
+
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>Detailed Metrics:</Typography>
+                    <Tooltip title="Average number of words per sentence. Shorter sentences are typically easier to read.">
+                      <Typography variant="body2">
+                        • Avg. Sentence Length: <strong>{Math.round(extractedData.analysis.readability.metrics.averageSentenceLength)}</strong> words
+                      </Typography>
+                    </Tooltip>
+                    <Tooltip title="Percentage of words that are considered complex (3+ syllables). Lower percentages indicate simpler vocabulary.">
+                      <Typography variant="body2">
+                        • Complex Words: <strong>{Math.round(extractedData.analysis.readability.metrics.complexWordPercentage)}%</strong>
+                      </Typography>
+                    </Tooltip>
+                    <Tooltip title="Flesch Reading Ease score (0-100). Higher scores mean the text is easier to read.">
+                      <Typography variant="body2">
+                        • Reading Ease: <strong>{Math.round(extractedData.analysis.readability.metrics.readingEase)}</strong>
+                      </Typography>
+                    </Tooltip>
+                  </Box>
                 </Paper>
               </Grid>
 
