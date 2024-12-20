@@ -85,38 +85,6 @@ export const WebScraper = () => {
   const [loadingMessage, setLoadingMessage] = useState(LoadingMessages[0]);
 
   useEffect(() => {
-    // Fetch available models from the backend
-    fetch('/api/models')
-      .then(res => res.json())
-      .then(data => {
-        const models = {
-          'gpt4': {
-            id: 'gpt4',
-            name: 'GPT-4 Turbo',
-            provider: 'openai',
-            description: 'Latest GPT-4 model with improved analysis capabilities',
-            available: true
-          },
-          'gpt35': {
-            id: 'gpt35',
-            name: 'GPT-3.5 Turbo',
-            provider: 'openai',
-            description: 'Fast and efficient for basic content analysis',
-            available: true
-          },
-          'claude': {
-            id: 'claude',
-            name: 'Claude 3 Opus',
-            provider: 'anthropic',
-            description: 'Advanced model with strong analytical capabilities',
-            available: true
-          }
-        };
-      })
-      .catch(err => console.error('Failed to fetch models:', err));
-  }, []);
-
-  useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
         setLoadingMessage(LoadingMessages[Math.floor(Math.random() * LoadingMessages.length)]);
