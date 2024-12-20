@@ -1,13 +1,15 @@
-import { Theme } from '@mui/material/styles';
+import { Theme, PaletteOptions } from '@mui/material/styles';
 
 export interface PreviewTheme {
   name: string;
   description: string;
   styles: {
     container: Record<string, string>;
-    component: Record<string, string>;
+    component?: Record<string, string>;
   };
-  theme: Partial<Theme>;
+  theme: {
+    palette?: PaletteOptions;
+  };
 }
 
 export const previewThemes: PreviewTheme[] = [

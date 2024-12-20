@@ -1,22 +1,22 @@
-import React from 'react';
-import { 
-  Box, 
-  Typography,
-  Paper,
+import React, { FC } from 'react';
+import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Typography,
+  Link,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Box,
   Table,
   TableHead,
   TableBody,
   TableCell,
   TableContainer,
   TableRow,
-  Link,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Paper
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkIcon from '@mui/icons-material/Link';

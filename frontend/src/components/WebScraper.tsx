@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FC } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -22,7 +22,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  useTheme,
   Tooltip,
   IconButton,
 } from '@mui/material';
@@ -31,7 +30,6 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ClearIcon from '@mui/icons-material/Clear';
 
 interface Model {
@@ -167,8 +165,7 @@ const LoadingMessages = [
   "Activating quantum sentiment superposition states..."
 ];
 
-export const WebScraper: FC = () => {
-  const theme = useTheme();
+export const WebScraper = () => {
   const [url, setUrl] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt4');
   const [isLoading, setIsLoading] = useState(false);
