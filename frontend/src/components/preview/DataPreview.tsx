@@ -163,7 +163,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
                 </AccordionSummary>
                 <AccordionDetails>
                   <List>
-                    {data.map((link, index) => (
+                    {Array.isArray(data) && data.map((link: any, index: number) => (
                       <ListItem key={index}>
                         <ListItemIcon>
                           <LinkIcon color="primary" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FC } from 'react';
 import {
   Box,
   Button,
@@ -167,7 +167,7 @@ const LoadingMessages = [
   "Activating quantum sentiment superposition states..."
 ];
 
-export const WebScraper: React.FC = () => {
+export const WebScraper: FC = () => {
   const theme = useTheme();
   const [url, setUrl] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt4');
