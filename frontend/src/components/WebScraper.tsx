@@ -31,78 +31,6 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import ClearIcon from '@mui/icons-material/Clear';
 
-interface Model {
-  id: string;
-  name: string;
-  provider: string;
-  description: string;
-  available: boolean;
-}
-
-interface Analysis {
-  language: {
-    code: string;
-    name: string;
-    confidence: string;
-  };
-  sentiment: {
-    overall: string;
-    score: number;
-    analysis: {
-      tone: string;
-      emotionalTriggers: string[];
-      highlights: {
-        positive: string[];
-        negative: string[];
-      };
-    };
-  };
-  readability: {
-    score: number;
-    gradeLevel: string;
-    metrics: {
-      averageSentenceLength: number;
-      complexWordPercentage: number;
-      readingEase: number;
-      totalWords: number;
-      totalSentences: number;
-    };
-    analysis: {
-      complexity: string;
-      sentenceStructure: string;
-      wordChoice: string;
-      suggestions: string[];
-    };
-  };
-  seo: {
-    score: number;
-    analysis: {
-      titleTag: string;
-      metaDescription: string;
-      headingStructure: string;
-      keywordUsage: string;
-    };
-    recommendations: string[];
-  };
-  keywords: {
-    primary: Array<{
-      keyword: string;
-      frequency: number;
-      density: string;
-      importance: string;
-    }>;
-    secondary: Array<{
-      keyword: string;
-      frequency: number;
-      density: string;
-    }>;
-    phrases: Array<{
-      phrase: string;
-      frequency: number;
-    }>;
-  };
-}
-
 interface ExtractedData {
   metadata: {
     title?: string;
@@ -135,34 +63,15 @@ interface ExtractedData {
   }[];
 }
 
-interface AnalysisResponse {
-  success: boolean;
-  data?: ExtractedData;
-  model?: string;
-  error?: string;
-}
-
 const LoadingMessages = [
-  "Initializing quantum neural pathways...",
-  "Recalibrating hyperspace DOM traversal matrices...",
-  "Engaging multi-threaded semantic analysis protocols...",
-  "Optimizing non-linear content extraction algorithms...",
-  "Synthesizing advanced heuristic parsing modules...",
-  "Deploying recursive metacontent interpretation subroutines...",
-  "Accelerating parallel sentiment quantification processes...",
-  "Harmonizing cross-dimensional data extraction vectors...",
-  "Bootstrapping advanced linguistic correlation engines...",
-  "Activating neural-symbolic reasoning frameworks...",
-  "Implementing quantum-entangled content analysis...",
-  "Synchronizing temporal parsing manifolds...",
-  "Calibrating semantic resonance frequencies...",
-  "Engaging hyperdimensional context mapping...",
-  "Initializing recursive metaphor detection arrays...",
-  "Deploying advanced irony quantification matrices...",
-  "Optimizing rhetorical pattern recognition algorithms...",
-  "Synthesizing cross-cultural linguistic tensors...",
-  "Reconfiguring semantic field harmonics...",
-  "Activating quantum sentiment superposition states..."
+  "Analyzing webpage content...",
+  "Extracting key information...",
+  "Processing metadata...",
+  "Identifying main topics...",
+  "Evaluating content structure...",
+  "Analyzing semantic relationships...",
+  "Generating insights...",
+  "Finalizing analysis..."
 ];
 
 export const WebScraper = () => {
@@ -174,35 +83,36 @@ export const WebScraper = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [loadingMessage, setLoadingMessage] = useState(LoadingMessages[0]);
-  const [models, setModels] = useState<Record<string, Model>>({
-    'gpt4': {
-      id: 'gpt4',
-      name: 'GPT-4 Turbo',
-      provider: 'openai',
-      description: 'Latest GPT-4 model with improved analysis capabilities',
-      available: true
-    },
-    'gpt35': {
-      id: 'gpt35',
-      name: 'GPT-3.5 Turbo',
-      provider: 'openai',
-      description: 'Fast and efficient for basic content analysis',
-      available: true
-    },
-    'claude': {
-      id: 'claude',
-      name: 'Claude 3 Opus',
-      provider: 'anthropic',
-      description: 'Advanced model with strong analytical capabilities',
-      available: true
-    }
-  });
 
   useEffect(() => {
     // Fetch available models from the backend
     fetch('/api/models')
       .then(res => res.json())
-      .then(data => setModels(data))
+      .then(data => {
+        const models = {
+          'gpt4': {
+            id: 'gpt4',
+            name: 'GPT-4 Turbo',
+            provider: 'openai',
+            description: 'Latest GPT-4 model with improved analysis capabilities',
+            available: true
+          },
+          'gpt35': {
+            id: 'gpt35',
+            name: 'GPT-3.5 Turbo',
+            provider: 'openai',
+            description: 'Fast and efficient for basic content analysis',
+            available: true
+          },
+          'claude': {
+            id: 'claude',
+            name: 'Claude 3 Opus',
+            provider: 'anthropic',
+            description: 'Advanced model with strong analytical capabilities',
+            available: true
+          }
+        };
+      })
       .catch(err => console.error('Failed to fetch models:', err));
   }, []);
 
