@@ -4,32 +4,37 @@ import {
   Button,
   TextField,
   Typography,
-  Grid,
   Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Chip,
   Snackbar,
   Alert,
   CircularProgress,
   LinearProgress,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Container,
   Tooltip,
   IconButton,
+  Switch,
+  FormControl,
+  FormControlLabel,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  Card,
+  CardContent,
 } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import LinkIcon from '@mui/icons-material/Link';
+import LaunchIcon from '@mui/icons-material/Launch';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ClearIcon from '@mui/icons-material/Clear';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 
 interface ExtractedData {
   metadata: {
@@ -41,11 +46,8 @@ interface ExtractedData {
     categories?: string[];
   };
   content: {
-    mainContent: string;
-    sections: {
-      heading?: string;
-      content: string;
-    }[];
+    summary: string;
+    paragraphs: string[];
   };
   links: {
     internal: { text: string; url: string }[];
@@ -83,6 +85,7 @@ export const WebScraper = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [loadingMessage, setLoadingMessage] = useState(LoadingMessages[0]);
+  const [isTestMode, setIsTestMode] = useState(true);
 
   useEffect(() => {
     if (isLoading) {
@@ -92,6 +95,49 @@ export const WebScraper = () => {
       return () => clearInterval(interval);
     }
   }, [isLoading]);
+
+  const mockResponse = {
+    content: {
+      summary: "This is a test page for web scraping analysis. It contains various elements including product information, navigation links, and structured content.",
+      paragraphs: [
+        "This is a test page designed to help verify web scraping functionality. It contains various elements that a typical webpage might have, including text content, links, and structured data.",
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+      ]
+    },
+    metadata: {
+      title: "Test Page for Web Scraping",
+      description: "Test page for web scraping analysis",
+      keywords: "test, web scraping, analysis",
+      author: "Test Author"
+    },
+    links: {
+      internal: [
+        { text: "About", url: "/about" },
+        { text: "Products", url: "/products" },
+        { text: "Contact", url: "/contact" }
+      ],
+      external: [
+        { text: "External Resource 1", url: "https://example.com/resource1" },
+        { text: "External Resource 2", url: "https://example.com/resource2" },
+        { text: "External Resource 3", url: "https://example.com/resource3" }
+      ]
+    },
+    products: [
+      {
+        title: "Product 1",
+        price: 99.99,
+        sku: "TEST001",
+        description: "This is a test product with various features and specifications."
+      },
+      {
+        title: "Product 2",
+        price: 149.99,
+        sku: "TEST002",
+        description: "Another test product with different specifications and features."
+      }
+    ]
+  };
 
   const handlePaste = async () => {
     try {
@@ -115,233 +161,238 @@ export const WebScraper = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!url || !selectedModel) {
-      setError('Please enter a URL and select a model');
+    if (!url) {
+      setError('Please enter a URL');
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setExtractedData(null);
-
     console.log('Sending request with:', { url, modelId: selectedModel });
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url,
-          modelId: selectedModel,
-        }),
-      });
+      if (isTestMode) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setExtractedData(mockResponse);
+      } else {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url, modelId: selectedModel }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Server response:', errorData);
-        throw new Error(errorData.error || 'Failed to analyze URL');
+        if (!response.ok) {
+          throw new Error('Failed to analyze content');
+        }
+
+        const result = await response.json();
+        console.log('Received result:', result);
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        setExtractedData(result);
       }
-
-      const result = await response.json();
-      console.log('Received result:', result);
-      setExtractedData(result);
-      setSnackbarMessage(`Analysis completed using ${result.metadata.model}`);
-      setSnackbarOpen(true);
-    } catch (error) {
-      console.error('Analysis error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to analyze URL');
+    } catch (err) {
+      console.log('Analysis error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred during analysis');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleModelChange = (event: any) => {
-    setSelectedModel(event.target.value);
   };
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            <Box sx={{ mb: 3 }}>
-              <Typography 
-                variant="h4" 
-                gutterBottom 
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  color: 'primary.main',
-                  fontWeight: 600,
-                  letterSpacing: '-0.5px'
-                }}
-              >
-                Content & Sentiment Analyzer
-                <Tooltip title="Enter a URL to analyze its content, sentiment, readability, and more using advanced AI models.">
-                  <IconButton size="small">
-                    <HelpOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Typography>
-              <Typography 
-                color="text.secondary" 
-                variant="subtitle1" 
-                gutterBottom
-                sx={{ 
-                  letterSpacing: '0.1px',
-                  fontWeight: 400
-                }}
-              >
-                Deep analysis of web content using AI - extract data, understand sentiment, and assess readability
-              </Typography>
-
-              {/* Model Selection */}
-              <Box sx={{ mt: 3, mb: 4 }}>
-                <Stack spacing={2}>
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel id="model-select-label">AI Model</InputLabel>
-                    <Select
-                      labelId="model-select-label"
-                      id="model-select"
-                      value={selectedModel || ''}
-                      label="AI Model"
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                    >
-                      <MenuItem value="gpt4">GPT-4 Turbo</MenuItem>
-                      <MenuItem value="gpt35">GPT-3.5 Turbo</MenuItem>
-                      <MenuItem value="claude">Claude 3</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 2
-                  }}>
-                    <TextField
-                      fullWidth
-                      label="Enter URL"
-                      variant="outlined"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      disabled={isLoading}
-                      placeholder="https://example.com"
-                      type="url"
-                      InputProps={{
-                        endAdornment: (
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Clear page">
-                              <IconButton
-                                onClick={handleClear}
-                                disabled={isLoading}
-                                size="small"
-                                sx={{ 
-                                  opacity: (!url && !extractedData) ? 0.3 : 1,
-                                  transition: 'opacity 0.2s'
-                                }}
-                              >
-                                <ClearIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Paste URL from clipboard">
-                              <IconButton 
-                                onClick={handlePaste}
-                                disabled={isLoading}
-                                size="small"
-                                sx={{ mr: 1 }}
-                              >
-                                <ContentPasteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiInputLabel-root': {
-                          transform: 'translate(14px, 12px) scale(1)'
-                        },
-                        '& .MuiInputLabel-shrink': {
-                          transform: 'translate(14px, -9px) scale(0.75)'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: 'rgba(0, 0, 0, 0.23)',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(0, 0, 0, 0.23)',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isTestMode}
+                      onChange={(e) => setIsTestMode(e.target.checked)}
+                      color="primary"
                     />
-                    <Button
-                      variant="contained"
-                      onClick={handleAnalyze}
-                      disabled={!url || isLoading || !selectedModel}
-                      sx={{ 
-                        minWidth: 120,
-                        width: { xs: '100%', sm: 'auto' },
-                        height: 56,
-                        position: 'relative',
-                        bgcolor: 'primary.main',
-                        fontWeight: 500,
-                        letterSpacing: '0.5px',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                        }
-                      }}
-                    >
-                      {isLoading ? (
-                        <CircularProgress size={24} color="inherit" />
-                      ) : (
-                        'Extract Data'
-                      )}
-                    </Button>
-                  </Box>
-                </Stack>
-              </Box>
-            </Box>
-
-            {isLoading && (
-              <LinearProgress 
-                sx={{ 
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0
-                }}
-              />
-            )}
-
-            {error && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                  mb: 2,
-                  '& .MuiAlert-message': {
-                    width: '100%'
                   }
-                }}
-              >
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                  Error analyzing URL
+                  label="Test Mode"
+                />
+              </Box>
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    letterSpacing: '-0.5px'
+                  }}
+                >
+                  Content & Sentiment Analyzer
+                  <Tooltip title="Enter a URL to analyze its content, sentiment, readability, and more using advanced AI models.">
+                    <IconButton size="small">
+                      <HelpOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Typography>
-                <Typography variant="body2" color="error">
-                  {error}
+                <Typography 
+                  color="text.secondary" 
+                  variant="subtitle1" 
+                  gutterBottom
+                  sx={{ 
+                    letterSpacing: '0.1px',
+                    fontWeight: 400
+                  }}
+                >
+                  Deep analysis of web content using AI - extract data, understand sentiment, and assess readability
                 </Typography>
-              </Alert>
-            )}
+
+                {/* Model Selection */}
+                <Box sx={{ mt: 3, mb: 4 }}>
+                  <Stack spacing={2}>
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                      <InputLabel id="model-select-label">AI Model</InputLabel>
+                      <Select
+                        labelId="model-select-label"
+                        id="model-select"
+                        value={selectedModel || ''}
+                        label="AI Model"
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                      >
+                        <MenuItem value="gpt4">GPT-4 Turbo</MenuItem>
+                        <MenuItem value="gpt3">GPT-3.5 Turbo</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: 2
+                    }}>
+                      <TextField
+                        fullWidth
+                        label="Enter URL"
+                        variant="outlined"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        disabled={isLoading}
+                        placeholder="https://example.com"
+                        type="url"
+                        InputProps={{
+                          endAdornment: (
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Tooltip title="Clear page">
+                                <IconButton
+                                  onClick={handleClear}
+                                  disabled={isLoading}
+                                  size="small"
+                                  sx={{ 
+                                    opacity: (!url && !extractedData) ? 0.3 : 1,
+                                    transition: 'opacity 0.2s'
+                                  }}
+                                >
+                                  <ClearIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Paste URL from clipboard">
+                                <IconButton 
+                                  onClick={handlePaste}
+                                  disabled={isLoading}
+                                  size="small"
+                                  sx={{ mr: 1 }}
+                                >
+                                  <ContentPasteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          ),
+                        }}
+                        sx={{
+                          '& .MuiInputLabel-root': {
+                            transform: 'translate(14px, 12px) scale(1)'
+                          },
+                          '& .MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                              borderColor: 'rgba(0, 0, 0, 0.23)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'rgba(0, 0, 0, 0.23)',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: 'primary.main',
+                            },
+                          },
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={handleAnalyze}
+                        disabled={!url || isLoading || !selectedModel}
+                        sx={{ 
+                          minWidth: 120,
+                          width: { xs: '100%', sm: 'auto' },
+                          height: 56,
+                          position: 'relative',
+                          bgcolor: 'primary.main',
+                          fontWeight: 500,
+                          letterSpacing: '0.5px',
+                          '&:hover': {
+                            bgcolor: 'primary.dark',
+                          }
+                        }}
+                      >
+                        {isLoading ? (
+                          <CircularProgress size={24} color="inherit" />
+                        ) : (
+                          'Extract Data'
+                        )}
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Box>
+
+              {isLoading && (
+                <LinearProgress 
+                  sx={{ 
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0
+                  }}
+                />
+              )}
+
+              {error && (
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiAlert-message': {
+                      width: '100%'
+                    }
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                    Error analyzing URL
+                  </Typography>
+                  <Typography variant="body2" color="error">
+                    {error}
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
           </Paper>
         </Grid>
 
@@ -448,23 +499,35 @@ export const WebScraper = () => {
             }}
           >
             {extractedData && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="h5" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  Extracted Data
-                </Typography>
-                <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  {extractedData.content.mainContent}
-                </Typography>
-                {extractedData.content.sections.map((section, index) => (
-                  <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                      {section.heading}
-                    </Typography>
-                    <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                      {section.content}
-                    </Typography>
-                  </Box>
-                ))}
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography variant="h5" gutterBottom>
+                          Content Summary
+                        </Typography>
+                        <Typography variant="body1">
+                          {extractedData.content.summary}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Typography variant="h5" gutterBottom>
+                          Detailed Content
+                        </Typography>
+                        {extractedData.content.paragraphs?.map((paragraph, index) => (
+                          <Typography key={index} variant="body1">
+                            {paragraph}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Paper>
+                  </Grid>
+                </Grid>
               </Box>
             )}
             {isLoading && (
@@ -508,176 +571,196 @@ export const WebScraper = () => {
           </Paper>
         </Grid>
 
-        {extractedData && (
-          <Box sx={{ mt: 4, textAlign: { xs: 'center', md: 'left' } }}>
-            <Typography variant="h5" gutterBottom>Analysis Results</Typography>
-            
-            {/* Summary Section */}
-            <Paper sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {extractedData.metadata.publishDate && (
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Chip 
-                      label={`Published: ${new Date(extractedData.metadata.publishDate).toLocaleString()}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </Box>
-                )}
-                <Typography variant="h6" gutterBottom>Summary</Typography>
-                <Typography variant="body1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                  {extractedData.metadata.description}
-                </Typography>
-                
-                <Typography variant="subtitle1" sx={{ mt: 2 }}>Key Insights:</Typography>
-                <List sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignItems: { xs: 'center', md: 'flex-start' }
-                }}>
-                  {extractedData.metadata.keywords && (
-                    <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                      <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
-                        <LightbulbIcon color="primary" />
-                      </ListItemIcon>
-                      <ListItemText primary={extractedData.metadata.keywords} />
-                    </ListItem>
-                  )}
-                </List>
-              </Box>
-            </Paper>
-
-            {/* Analysis Section */}
-            <Grid container spacing={2}>
-              {/* Language Analysis */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
-                  <Typography variant="h6" gutterBottom>Language Analysis</Typography>
-                  <Typography>Language: English</Typography>
-                  <Typography>Confidence: High</Typography>
-                </Paper>
-              </Grid>
-
-              {/* Sentiment Analysis */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
-                  <Typography variant="h6" gutterBottom>Sentiment Analysis</Typography>
-                  <Typography>Overall: Positive</Typography>
-                  <Typography>Score: 80</Typography>
-                  <Typography>Tone: Informative</Typography>
-                </Paper>
-              </Grid>
-
-              {/* Readability Analysis */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' }, gap: 1 }}>
-                  <Typography variant="h6" gutterBottom>Readability Analysis</Typography>
-                  
-                  <Tooltip title="The approximate U.S. grade level required to understand this text. Lower grades indicate more accessible content.">
-                    <Typography>
-                      Grade Level: <strong>9</strong>
-                    </Typography>
-                  </Tooltip>
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1, mb: 1 }}>
-                    Grade levels: 1-6 (Elementary), 7-9 (Middle School), 10-12 (High School), 13+ (College)
-                  </Typography>
-
-                  <Tooltip title="Overall readability score (0-100). Higher scores indicate easier readability. Based on factors like sentence length and word complexity.">
-                    <Typography>
-                      Score: <strong>70</strong>
-                    </Typography>
-                  </Tooltip>
-
-                  <Tooltip title="Assessment of text complexity based on vocabulary, sentence structure, and overall readability metrics.">
-                    <Typography>
-                      Complexity: <strong>Medium</strong>
-                    </Typography>
-                  </Tooltip>
-
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>Detailed Metrics:</Typography>
-                    <Tooltip title="Average number of words per sentence. Shorter sentences are typically easier to read.">
-                      <Typography variant="body2">
-                        • Avg. Sentence Length: <strong>15</strong> words
-                      </Typography>
-                    </Tooltip>
-                    <Tooltip title="Percentage of words that are considered complex (3+ syllables). Lower percentages indicate simpler vocabulary.">
-                      <Typography variant="body2">
-                        • Complex Words: <strong>20%</strong>
-                      </Typography>
-                    </Tooltip>
-                    <Tooltip title="Flesch Reading Ease score (0-100). Higher scores mean the text is easier to read.">
-                      <Typography variant="body2">
-                        • Reading Ease: <strong>60</strong>
-                      </Typography>
-                    </Tooltip>
-                  </Box>
-                </Paper>
-              </Grid>
-
-              {/* SEO Analysis */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
-                  <Typography variant="h6" gutterBottom>SEO Analysis</Typography>
-                  <Typography>Score: 80</Typography>
-                  <Typography variant="subtitle1" sx={{ mt: 1 }}>Recommendations:</Typography>
-                  <List dense sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', md: 'flex-start' } }}>
-                    <ListItem sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                      <ListItemIcon sx={{ minWidth: { xs: '40px', md: '56px' } }}>
-                        <CheckCircleIcon color="success" fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText primary="Optimize meta title and description" />
-                    </ListItem>
-                  </List>
-                </Paper>
-              </Grid>
-
-              {/* Keywords Analysis */}
-              <Grid item xs={12}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                    Keywords Analysis
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                        Primary Keywords:
-                      </Typography>
-                      <List dense sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        alignItems: { xs: 'center', md: 'flex-start' }
-                      }}>
-                        <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                          <ListItemText 
-                            primary="Keyword 1"
-                            secondary={`Frequency: 10 | Density: 0.5`}
+        {extractedData && !isLoading && (
+          <Grid item xs={12}>
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h5" gutterBottom>Analysis Results</Typography>
+              
+              {/* Metadata Section */}
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Paper elevation={3} sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {/* Metadata Chips */}
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {extractedData.metadata.keywords && (
+                          <Chip 
+                            label={`Keywords: ${extractedData.metadata.keywords}`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ borderWidth: 2 }}
                           />
+                        )}
+                        {extractedData.metadata.author && (
+                          <Chip 
+                            label={`Author: ${extractedData.metadata.author}`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ borderWidth: 2 }}
+                          />
+                        )}
+                        {extractedData.metadata.publishDate && (
+                          <Chip 
+                            label={`Published: ${new Date(extractedData.metadata.publishDate).toLocaleString()}`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                      
+                      {/* Links Section */}
+                      <Box>
+                        <Typography variant="subtitle1" gutterBottom>Links Found:</Typography>
+                        <Grid container spacing={2}>
+                          {/* Internal Links */}
+                          {extractedData.links.internal.length > 0 && (
+                            <Grid item xs={12} md={6}>
+                              <List dense>
+                                <ListItem>
+                                  <ListItemIcon>
+                                    <LinkIcon color="primary" />
+                                  </ListItemIcon>
+                                  <ListItemText 
+                                    primary="Internal Links"
+                                    secondary={`${extractedData.links.internal.length} found`}
+                                  />
+                                </ListItem>
+                              </List>
+                            </Grid>
+                          )}
+                          
+                          {/* External Links */}
+                          {extractedData.links.external.length > 0 && (
+                            <Grid item xs={12} md={6}>
+                              <List dense>
+                                <ListItem>
+                                  <ListItemIcon>
+                                    <LaunchIcon color="primary" />
+                                  </ListItemIcon>
+                                  <ListItemText 
+                                    primary="External Links"
+                                    secondary={`${extractedData.links.external.length} found`}
+                                  />
+                                </ListItem>
+                              </List>
+                            </Grid>
+                          )}
+                        </Grid>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* Analysis Cards Section */}
+              <Grid container spacing={2} sx={{ mt: 2 }}>
+                {/* Language Analysis */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="h6" gutterBottom>Language Analysis</Typography>
+                      <Typography>Language: English</Typography>
+                      <Typography>Confidence: High</Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* Sentiment Analysis */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="h6" gutterBottom>Sentiment Analysis</Typography>
+                      <Typography>Overall: Positive</Typography>
+                      <Typography>Score: 80</Typography>
+                      <Typography>Tone: Informative</Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* Readability Analysis */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="h6" gutterBottom>Readability Analysis</Typography>
+                      
+                      <Tooltip title="The approximate U.S. grade level required to understand this text">
+                        <Typography>
+                          Grade Level: <strong>9</strong>
+                        </Typography>
+                      </Tooltip>
+                      
+                      <Typography variant="caption" color="text.secondary">
+                        Grade levels: 1-6 (Elementary), 7-9 (Middle School), 10-12 (High School), 13+ (College)
+                      </Typography>
+
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Detailed Metrics:
+                        </Typography>
+                        <List dense>
+                          <ListItem>
+                            <ListItemIcon>
+                              <FiberManualRecordIcon sx={{ fontSize: 8 }} />
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary="Avg. Sentence Length"
+                              secondary="15 words"
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon>
+                              <FiberManualRecordIcon sx={{ fontSize: 8 }} />
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary="Complex Words"
+                              secondary="20%"
+                            />
+                          </ListItem>
+                          <ListItem>
+                            <ListItemIcon>
+                              <FiberManualRecordIcon sx={{ fontSize: 8 }} />
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary="Reading Ease Score"
+                              secondary="60/100"
+                            />
+                          </ListItem>
+                        </List>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* SEO Analysis */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="h6" gutterBottom>SEO Analysis</Typography>
+                      <Typography>Score: 80/100</Typography>
+                      
+                      <Typography variant="subtitle1" sx={{ mt: 1 }}>Recommendations:</Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon>
+                            <CheckCircleIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText primary="Meta title and description are well-optimized" />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <CheckCircleIcon color="success" />
+                          </ListItemIcon>
+                          <ListItemText primary="Good keyword density" />
                         </ListItem>
                       </List>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-                        Key Phrases:
-                      </Typography>
-                      <List dense sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        alignItems: { xs: 'center', md: 'flex-start' }
-                      }}>
-                        <ListItem sx={{ textAlign: { xs: 'center', md: 'left' }, width: '100%' }}>
-                          <ListItemText 
-                            primary="Key Phrase 1"
-                            secondary={`Frequency: 5`}
-                          />
-                        </ListItem>
-                      </List>
-                    </Grid>
-                  </Grid>
-                </Paper>
+                    </Box>
+                  </Paper>
+                </Grid>
               </Grid>
-            </Grid>
-          </Box>
+            </Box>
+          </Grid>
         )}
       </Grid>
 
