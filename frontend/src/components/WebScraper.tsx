@@ -15,7 +15,6 @@ import {
   Alert,
   CircularProgress,
   LinearProgress,
-  Container,
   Tooltip,
   IconButton,
   Switch,
@@ -176,7 +175,7 @@ export const WebScraper = () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         setExtractedData(mockResponse);
       } else {
-        const response = await fetch('/api/analyze', {
+        const response = await fetch('http://localhost:3001/api/analyze', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -185,17 +184,14 @@ export const WebScraper = () => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to analyze content');
+          throw new Error('Network response was not ok');
         }
 
-        const result = await response.json();
-        console.log('Received result:', result);
-
-        if (result.error) {
-          throw new Error(result.error);
-        }
-
-        setExtractedData(result);
+        const data = await response.json();
+        setExtractedData({
+          ...data,
+          images: data.images || [], // Ensure images property exists
+        });
       }
     } catch (err) {
       console.log('Analysis error:', err);
@@ -475,9 +471,8 @@ export const WebScraper = () => {
                     )}
                     {extractedData.metadata.publishDate && (
                       <Chip 
-                        label={`Published: ${extractedData.metadata.publishDate}`}
+                        label={`Published: ${new Date(extractedData.metadata.publishDate).toLocaleString()}`}
                         size="small"
-                        color="default"
                         variant="outlined"
                       />
                     )}
