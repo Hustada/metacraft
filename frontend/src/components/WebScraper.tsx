@@ -97,7 +97,7 @@ export const WebScraper = () => {
 
   const mockResponse = {
     content: {
-      summary: "This is a test page for web scraping analysis. It contains various elements including product information, navigation links, and structured content.",
+      summary: "This is a test page for web scraping analysis.",
       paragraphs: [
         "This is a test page designed to help verify web scraping functionality. It contains various elements that a typical webpage might have, including text content, links, and structured data.",
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -122,6 +122,10 @@ export const WebScraper = () => {
         { text: "External Resource 3", url: "https://example.com/resource3" }
       ]
     },
+    images: [
+      { type: "image", text: "Test Image 1" },
+      { type: "image", text: "Test Image 2" }
+    ],
     products: [
       {
         title: "Product 1",
